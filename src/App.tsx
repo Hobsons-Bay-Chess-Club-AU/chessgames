@@ -83,7 +83,7 @@ export default function App() {
   const handleModeChange = (type: string) => {
     setDisplayMode(type);
   };
-  const yearAttribute = import.meta.env.VITE_ALGOLIA_APP_ID ? 'year' : 'Year';
+  const yearAttribute = 'Year';
   return (
     <InstantSearch
       searchClient={searchClient}
