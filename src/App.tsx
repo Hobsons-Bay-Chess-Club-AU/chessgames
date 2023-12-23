@@ -93,7 +93,7 @@ export default function App() {
       <Configure hitsPerPage={50} />
       <header className="header-bg flex justify-center items-center min-height-[170px] p-2 bg-opacity-50 bg-white bg-contain pt-[150px] relative">
         <SearchBox
-          placeholder="Search keywork (ie: Magnus vs Hiraku)"
+          placeholder="Search keywork (ie: Kiet vs Elias)"
           className="w-3/4 mb-8"
         />
         <Setting />

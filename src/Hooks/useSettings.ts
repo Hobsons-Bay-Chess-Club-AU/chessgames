@@ -10,7 +10,7 @@ const useSetting = (
 ) => {
   // Get the settings from local storage and merge them with initialSettings
   const storedSettings = JSON.parse(
-    localStorage.getItem('settings') || '{}'
+    localStorage.getItem('settings') || '{"delay": 1000}'
   ) as Settings;
   const mergedSettings = { ...initialSettings, ...storedSettings };
 
