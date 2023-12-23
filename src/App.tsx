@@ -23,6 +23,7 @@ import { TableHit } from './Components/TableHit';
 import algoliasearch from 'algoliasearch';
 import { OpenPgn } from './Components/OpenPgn';
 import { Setting } from './Components/Setting';
+import PgnUploadComponent from './Components/UploadPgnFile';
 
 export default function App() {
   const { searchClient, isAlgolia, indexName } = useMemo(() => {
@@ -96,7 +97,10 @@ export default function App() {
           placeholder="Search keywork (ie: Kiet vs Elias)"
           className="w-3/4 mb-8"
         />
-        <Setting />
+        <div className="absolute top-5 right-5 p-2 flex w-[180px] justify-between">
+          <PgnUploadComponent />
+          <Setting />
+        </div>
       </header>
 
       <div className="flex w-full p-4">

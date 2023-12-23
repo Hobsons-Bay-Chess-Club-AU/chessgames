@@ -10,7 +10,7 @@ export function Setting() {
     setShowSetting(!showSetting);
   };
   return (
-    <div className="absolute top-5 right-5 p-5">
+    <div className="pt-2">
       <GrUserSettings onClick={toggleSetting} />
 
       {showSetting && (
