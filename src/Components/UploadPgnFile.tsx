@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BiCloudUpload } from 'react-icons/bi';
 import { TbWorldUpload } from 'react-icons/tb';
 import { Modal } from './Modal';
+import InfoAlert from './InfoAlert';
 
 function PgnUploadComponent() {
   const [isOpen, setIsOpen] = useState(false);
@@ -63,11 +64,16 @@ function PgnUploadComponent() {
           }}
         >
           <div className="container mx-auto p-4">
-            <h2 className="text-2xl mb-4">Upload your game (PGN):</h2>
+            <InfoAlert
+              title="Alternative"
+              message="You can upload single/multiple games by email them to : hbcc.it+games@outlook.com"
+            />
+            <h2 className="text-2xl mb-4 mt-4">Upload your game (*.pgn):</h2>
 
             <div className="mb-4">
               <input
                 type="file"
+                title="Select pgn file"
                 onChange={handleFileChange}
                 className="border p-2"
               />
