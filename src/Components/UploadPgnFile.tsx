@@ -82,7 +82,7 @@ function PgnUploadComponent() {
             {fileContent && (
               <div className="mt-4">
                 <h2 className="text-lg mb-2">PGN:</h2>
-                <pre className="bg-gray-200 p-4 whitespace-pre-wrap max-h-[500px] overflow-y-auto">
+                <pre className="bg-gray-200 p-4 whitespace-pre-wrap max-h-[400px] overflow-y-auto">
                   {fileContent}
                 </pre>
               </div>
