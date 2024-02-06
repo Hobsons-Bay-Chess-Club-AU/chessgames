@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import TypesenseInstantSearchAdapter from 'typesense-instantsearch-adapter';
 import {
   Configure,
@@ -11,7 +11,7 @@ import {
   SearchBox,
   PoweredBy,
 } from 'react-instantsearch';
-
+import { useParams, useNavigate } from 'react-router-dom';
 import './App.css';
 import { DisplaySelector } from './Components/DisplaySelector';
 import { Panel } from './Components/Panel';
@@ -26,6 +26,9 @@ import { Setting } from './Components/Setting';
 import PgnUploadComponent from './Components/UploadPgnFile';
 
 export default function App() {
+  const { gameId } = useParams();
+
+  const navigate = useNavigate();
   const { searchClient, isAlgolia, indexName } = useMemo(() => {
     const typesenseInstantsearchAdapter = new TypesenseInstantSearchAdapter({
       server: {
@@ -78,6 +81,7 @@ export default function App() {
   const [displayMode, setDisplayMode] = useState<string>('card');
 
   const handleHitClick = (item: any) => {
+    navigate('/game/' + item.objectID);
     setGame(item);
   };
 
@@ -85,6 +89,23 @@ export default function App() {
     setDisplayMode(type);
   };
   const yearAttribute = 'Year';
+
+  useEffect(() => {
+    if (!gameId) {
+      return;
+    }
+    if (game && gameId == game.objectID) {
+      return;
+    }
+    const fetchGameById = async () => {
+      const index = searchClient.initIndex(import.meta.env.VITE_ALGOLIA_INDEX);
+      const gamedata = await index.getObject(gameId);
+      if (gamedata) {
+        setGame(gamedata);
+      }
+    };
+    fetchGameById();
+  }, [game, gameId, searchClient, setGame]);
   return (
     <InstantSearch
       searchClient={searchClient}
@@ -214,7 +235,12 @@ export default function App() {
         </div>
       </div>
       {game && (
-        <Modal onClose={() => setGame(undefined)}>
+        <Modal
+          onClose={() => {
+            navigate('/');
+            setGame(undefined);
+          }}
+        >
           <GameViewer
             data={
               {
