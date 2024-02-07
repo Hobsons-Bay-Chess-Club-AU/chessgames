@@ -41,10 +41,10 @@ export function HitCard({ hit, onHitClick }: HitProps) {
           <BiSolidMap className="inline-block mr-1" />
           <Highlight attribute="Site" hit={hit} /> <br />
           <BsFillCalendarDateFill className="inline-block mr-1" />
-          {hit.Date ? (
-            <Highlight attribute="Date" hit={hit} />
-          ) : (
+          {hit.EventDate ? (
             <Highlight attribute="EventDate" hit={hit} />
+          ) : (
+            <Highlight attribute="Date" hit={hit} />
           )}
         </p>
       </div>
