@@ -148,6 +148,11 @@ export default function App() {
               // }}
             />
           </Panel>
+
+          <Panel header="Round">
+            <RefinementList attribute="Round" />
+          </Panel>
+
           <Panel header="White">
             <RefinementList
               attribute="White"
