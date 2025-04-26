@@ -25,6 +25,14 @@ import { OpenPgn } from './Components/OpenPgn';
 import { Setting } from './Components/Setting';
 import PgnUploadComponent from './Components/UploadPgnFile';
 
+function standardizeMoves(moves: string[]) {
+  if (!Array.isArray(moves)) return moves;
+  return moves.map((move) => {
+    if (typeof move !== 'string') return move;
+    return move.replace(/\b0-0-0\b/g, 'O-O-O').replace(/\b0-0\b/g, 'O-O');
+  });
+}
+
 export default function App() {
   const { gameId } = useParams();
 
@@ -247,13 +255,11 @@ export default function App() {
           }}
         >
           <GameViewer
-            data={
-              {
-                ...game,
-                Moves: game.Moves || game.moves,
-                ECO: game.eco || game.ECO,
-              } as any
-            }
+            data={{
+              ...game,
+              Moves: standardizeMoves(game.Moves || game.moves),
+              ECO: game.eco || game.ECO,
+            }}
           ></GameViewer>
         </Modal>
       )}
