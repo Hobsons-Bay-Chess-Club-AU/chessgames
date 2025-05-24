@@ -112,50 +112,65 @@ export function GameViewer({ data }: GameViewerProps) {
     const item: ReviewedMove = moveList[currentMoveIndex];
 
     if (item) {
-      // console.log(item); // Reduced logging
-      // scrolling
-      const itemRef = lineRefs.current[
-        Math.floor(currentMoveIndex / 2)
-      ] as HTMLDivElement;
-      const rect = itemRef.getBoundingClientRect();
-      if (rect.y > height - 200) {
-        itemRef.scrollIntoView();
-      }
-      if (!settings.isMute) {
-        playSound(item);
-      }
-      if (!isAnalysisMode && engine) { // Only run for main game navigation
-        engine.findBestMove(item.after, depth);
-        if (item.best) {
-          const bestmove: string = item.best?.bestmove || '';
-          setArrow([
-            [
-              bestmove.substring(0, 2) as Square,
-              bestmove.substring(2, 4) as Square,
-            ],
-          ]);
+      // console.log(item); 
+
+      if (!isAnalysisMode && moveList.length > 0) {
+        const refIndex = Math.floor(currentMoveIndex / 2);
+        if (lineRefs.current && lineRefs.current[refIndex]) {
+          const itemRef = lineRefs.current[refIndex] as HTMLDivElement;
+          const rect = itemRef.getBoundingClientRect();
+          if (rect.y > height - 200) { // height is from useViewport
+            itemRef.scrollIntoView();
+          }
         }
-      } else if (isAnalysisMode && topMovesAnalysis && topMovesAnalysis.lines && topMovesAnalysis.lines.length > 0) {
-        // In analysis mode, show the best move from topMovesAnalysis if available
-        const bestAnalysisMove = topMovesAnalysis.lines[0].pv.split(' ')[0];
-        if (bestAnalysisMove) {
-           setArrow([
-            [
-              bestAnalysisMove.substring(0, 2) as Square,
-              bestAnalysisMove.substring(2, 4) as Square,
-            ],
-          ]);
+        
+        if (!settings.isMute) {
+          playSound(item);
         }
       }
 
-      setFen(item.after); // This sets the main game FEN, analysisFen is separate
-      setCurrentMove(item);
+      if (!isAnalysisMode && engine) {
+        engine.findBestMove(item.after, depth);
+        if (item.best) {
+          const bestmove: string = item.best?.bestmove || '';
+          // Arrow for main game, only if not in analysis mode.
+           setArrow([
+             [
+               bestmove.substring(0, 2) as Square,
+               bestmove.substring(2, 4) as Square,
+             ],
+           ]);
+        }
+      } else if (isAnalysisMode && topMovesAnalysis?.lines && topMovesAnalysis.lines.length > 0) {
+        // Arrow for analysis mode.
+        const bestAnalysisMovePV = topMovesAnalysis.lines[0].pv;
+        if (bestAnalysisMovePV) {
+            const bestAnalysisMove = bestAnalysisMovePV.split(' ')[0];
+             setArrow([
+               [
+                 bestAnalysisMove.substring(0, 2) as Square,
+                 bestAnalysisMove.substring(2, 4) as Square,
+               ],
+             ]);
+        }
+      }
+      
+      // Set FEN based on mode. For main game, item.after is used.
+      // For analysis mode, analysisFen is managed by onAnalysisMove/onSelectAnalysisMove.
+      // This useEffect primarily reacts to currentMoveIndex changes for the *main game*.
+      if (!isAnalysisMode) {
+        setFen(item.after);
+      }
+      // currentMove is primarily for the main game's display (like CustomSquareRenderer)
+      // It's okay to set it even if CustomSquareRenderer is hidden in analysis mode.
+      setCurrentMove(item); 
     }
-    if (currentMoveIndex >= moveList.length) {
+
+    if (currentMoveIndex >= moveList.length && !isAnalysisMode) { // only stop play if related to main game
       setIsPlaying(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentMoveIndex, moveList, depth, settings, isAnalysisMode, engine, topMovesAnalysis]);
+  }, [currentMoveIndex, moveList, depth, settings, isAnalysisMode, engine, analysisFen, topMovesAnalysis, height, fen]);
 
   useEffect(() => {
     let intervalId: number = 0;
