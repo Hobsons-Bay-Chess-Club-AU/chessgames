@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Chessboard } from 'react-chessboard';
-import { Square } from 'chess.js';
-import { LuChevronFirst, LuDownload, LuChevronLast } from 'react-icons/lu';
+import { Square, Chess, ChessInstance } from 'chess.js';
+import { LuChevronFirst, LuDownload, LuChevronLast, LuBrain } from 'react-icons/lu';
 import { BsPlayFill, BsStopFill } from 'react-icons/bs';
 import { GrPrevious, GrNext } from 'react-icons/gr';
 import { PiSpeakerHigh, PiSpeakerX } from 'react-icons/pi';
@@ -23,6 +23,8 @@ import { EloBar } from './EloBar';
 import useStockfishOptions from '../Hooks/useStockfishOptions';
 import { ReviewPanel } from './ReviewPanel';
 import useSetting from '../Hooks/useSettings';
+import { TopMovesPanel } from './TopMovesPanel'; // Added import
+import { StockfishLine } from '../Shared/Model'; // Added import for StockfishLine type
 
 interface GameViewerProps {
   data: GameData;
@@ -35,13 +37,16 @@ export function GameViewer({ data }: GameViewerProps) {
   const [currentMove, setCurrentMove] = useState<ReviewedMove>();
   const [arrow, setArrow] = useState<Square[][]>([]);
   const [moveList, setMoveList] = useState<ReviewedMove[]>([]);
-  const { engine, bestMoveResult, reviewData, reviewStatus } = useStockfish();
+  const { engine, bestMoveResult, reviewData, reviewStatus, fetchTopMoves, topMovesAnalysis } = useStockfish();
   const { height, width } = useViewport();
   const [currentMoveIndex, setCurrentMoveIndex] = useState(
     data.Moves.length - 1
   );
   const [fen, setFen] = useState(data.fen || data.LastPosition);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isAnalysisMode, setIsAnalysisMode] = useState<boolean>(false);
+  const [analysisFen, setAnalysisFen] = useState<string>('');
+  const analysisGameRef = useRef<ChessInstance | null>(null);
   const boardSize = useMemo(() => {
     if (width >= 640) {
       return Math.min(height - 300, width - 400);
@@ -57,10 +62,39 @@ export function GameViewer({ data }: GameViewerProps) {
       if (index > moveList.length - 1) {
         return;
       }
+      if (isAnalysisMode) {
+        setIsAnalysisMode(false); // Exit analysis mode if navigating main game
+      }
       setCurrentMoveIndex(index);
     },
-    [moveList.length]
+    [moveList.length, isAnalysisMode, setIsAnalysisMode] // Add dependencies
   );
+
+  useEffect(() => {
+    if (isAnalysisMode) {
+      const currentBoardFen = fen; // Use the main game's FEN when starting analysis
+      analysisGameRef.current = new Chess(currentBoardFen);
+      setAnalysisFen(currentBoardFen);
+      // Clear any existing top moves when analysis mode starts/restarts for a new position
+      if (fetchTopMoves) fetchTopMoves(currentBoardFen);
+    } else {
+      // Optional: Clear analysis arrows or other analysis-specific UI when exiting
+      // We want to keep the arrows from the main game's current move if exiting analysis.
+      // If currentMove is defined, set arrows based on its best move.
+      if (currentMove && currentMove.best && currentMove.best.bestmove) {
+        const bestmove = currentMove.best.bestmove;
+        setArrow([
+          [
+            bestmove.substring(0, 2) as Square,
+            bestmove.substring(2, 4) as Square,
+          ],
+        ]);
+      } else {
+        setArrow([]);
+      }
+    }
+  }, [isAnalysisMode, fen, fetchTopMoves, currentMove]);
+
 
   useEffect(() => {
     if (reviewData) {
@@ -69,14 +103,16 @@ export function GameViewer({ data }: GameViewerProps) {
   }, [reviewData]);
 
   useEffect(() => {
-    engine?.findBestMove(data.fen || data.LastPosition, depth);
-  }, [engine, data.LastPosition, data.fen, depth]);
+    if (!isAnalysisMode && engine) { // Only run for initial load in non-analysis mode
+      engine.findBestMove(data.fen || data.LastPosition, depth);
+    }
+  }, [engine, data.LastPosition, data.fen, depth, isAnalysisMode]);
 
   useEffect(() => {
     const item: ReviewedMove = moveList[currentMoveIndex];
 
     if (item) {
-      console.log(item);
+      // console.log(item); // Reduced logging
       // scrolling
       const itemRef = lineRefs.current[
         Math.floor(currentMoveIndex / 2)
@@ -88,24 +124,38 @@ export function GameViewer({ data }: GameViewerProps) {
       if (!settings.isMute) {
         playSound(item);
       }
-      engine?.findBestMove(item.after, depth);
-      if (item.best) {
-        const bestmove: string = item.best?.bestmove || '';
-        setArrow([
-          [
-            bestmove.substring(0, 2) as Square,
-            bestmove.substring(2, 4) as Square,
-          ],
-        ]);
+      if (!isAnalysisMode && engine) { // Only run for main game navigation
+        engine.findBestMove(item.after, depth);
+        if (item.best) {
+          const bestmove: string = item.best?.bestmove || '';
+          setArrow([
+            [
+              bestmove.substring(0, 2) as Square,
+              bestmove.substring(2, 4) as Square,
+            ],
+          ]);
+        }
+      } else if (isAnalysisMode && topMovesAnalysis && topMovesAnalysis.lines && topMovesAnalysis.lines.length > 0) {
+        // In analysis mode, show the best move from topMovesAnalysis if available
+        const bestAnalysisMove = topMovesAnalysis.lines[0].pv.split(' ')[0];
+        if (bestAnalysisMove) {
+           setArrow([
+            [
+              bestAnalysisMove.substring(0, 2) as Square,
+              bestAnalysisMove.substring(2, 4) as Square,
+            ],
+          ]);
+        }
       }
-      setFen(item.after);
+
+      setFen(item.after); // This sets the main game FEN, analysisFen is separate
       setCurrentMove(item);
     }
     if (currentMoveIndex >= moveList.length) {
       setIsPlaying(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentMoveIndex, moveList, depth, settings]);
+  }, [currentMoveIndex, moveList, depth, settings, isAnalysisMode, engine, topMovesAnalysis]);
 
   useEffect(() => {
     let intervalId: number = 0;
@@ -161,21 +211,49 @@ export function GameViewer({ data }: GameViewerProps) {
   const toggleSpeaker = () => {
     setSetting('isMute', !settings.isMute);
   };
+
+  const onAnalysisMove = (sourceSquare: Square, targetSquare: Square, piece: string): boolean => {
+    if (!analysisGameRef.current) return false;
+
+    const move = analysisGameRef.current.move({
+      from: sourceSquare,
+      to: targetSquare,
+      promotion: 'q', // Always promote to queen for simplicity
+    });
+
+    if (move === null) { // Illegal move
+      return false;
+    }
+
+    const newFen = analysisGameRef.current.fen();
+    setAnalysisFen(newFen);
+    setArrow([[sourceSquare, targetSquare]]); // Show the user's move
+
+    if (fetchTopMoves) {
+      fetchTopMoves(newFen);
+    }
+    
+    return true; // Move was successful
+  };
+
   const onShowMove = (rMove: ReviewedMoveOutput) => {
+    if (isAnalysisMode) return; // Disable this functionality in analysis mode
+
     let index = 1;
     for (const m of rMove.bestLine?.moves || []) {
       setTimeout(() => {
         if (!settings.isMute) {
           playSound(m);
         }
-        console.log(m);
+        // console.log(m); // Reduced logging for cleaner console
         setArrow([[m.from, m.to]]);
-        engine?.findBestMove(m.after, depth);
+        if (engine) engine.findBestMove(m.after, depth);
         setFen(m.after);
       }, index * 1000);
       index++;
     }
   };
+
   const handleDownload = () => {
     const element = document.createElement('a');
     const file = new Blob([data.pgn || data.Pgn], { type: 'text/plain' });
@@ -191,6 +269,34 @@ export function GameViewer({ data }: GameViewerProps) {
     );
     if (indexOfMove >= 0) {
       moveTo(indexOfMove);
+    }
+  };
+
+  const onSelectAnalysisMove = (line: StockfishLine) => {
+    if (!analysisGameRef.current) return;
+    const lanMove = line.pv.split(' ')[0]; // Get the first move from the PV
+
+    const fromSquare = lanMove.substring(0, 2) as Square;
+    const toSquare = lanMove.substring(2, 4) as Square;
+    const promotionPiece = lanMove.length === 5 ? lanMove.substring(4,5) : undefined;
+
+    const moveResult = analysisGameRef.current.move({
+      from: fromSquare,
+      to: toSquare,
+      promotion: promotionPiece || 'q', 
+    });
+
+    if (moveResult === null) {
+      console.error("Failed to make selected analysis move:", lanMove);
+      return;
+    }
+
+    const newFen = analysisGameRef.current.fen();
+    setAnalysisFen(newFen);
+    setArrow([[fromSquare, toSquare]]); 
+
+    if (fetchTopMoves) {
+      fetchTopMoves(newFen);
     }
   };
 
@@ -247,10 +353,13 @@ export function GameViewer({ data }: GameViewerProps) {
           <Chessboard
             position={fen}
             boardWidth={boardSize}
+            position={isAnalysisMode ? analysisFen : fen}
+            boardWidth={boardSize}
             customArrows={arrow}
             customArrowColor="#11d954"
-            customSquare={currentMove?.playedMove && memoCustomerRender}
-            customSquareStyles={customSquare}
+            customSquare={currentMove?.playedMove && !isAnalysisMode && memoCustomerRender}
+            customSquareStyles={isAnalysisMode ? {} : customSquare}
+            onPieceDrop={isAnalysisMode ? onAnalysisMove : undefined}
           />
           <div
             className="text-xs font-semibold height-[38px] mt-1"
@@ -306,10 +415,17 @@ export function GameViewer({ data }: GameViewerProps) {
             <button onClick={handleDownload} className="p-3 cursor-pointer">
               <LuDownload />
             </button>
-
+            <button
+              onClick={() => setIsAnalysisMode(!isAnalysisMode)}
+              className="p-3 cursor-pointer"
+              title={isAnalysisMode ? 'Exit Analysis Mode' : 'Start Analysis Mode'}
+            >
+              <LuBrain color={isAnalysisMode ? 'green' : 'inherit'} />
+            </button>
             <button
               onClick={() => engine?.reviewGame(moveList, depth)}
               className="p-3 cursor-pointer"
+              title="Review Game"
             >
               <MdReviews />
             </button>
@@ -319,36 +435,50 @@ export function GameViewer({ data }: GameViewerProps) {
           className="ml-3 flex flex-col pl-2 w-[400px] overflow-y-scroll overflow-x-hidden mt-5"
           style={{ maxHeight: boardSize + 100 }}
         >
-          {reviewData && reviewData.summary ? (
+          {isAnalysisMode && topMovesAnalysis && (
+            <TopMovesPanel
+              topMovesOutput={topMovesAnalysis}
+              onSelectMove={onSelectAnalysisMove}
+              currentAnalysisFen={analysisFen}
+            />
+          )}
+
+          {!isAnalysisMode && reviewData && reviewData.summary && (
             <>
               <MoveChart reviewData={reviewData} />
-
               <ReviewSummary
                 data={reviewData.summary}
                 result={data.Result}
                 clickOnSummaryItem={clickOnSummaryItem}
               />
             </>
-          ) : (
-            <div className="p-3 text-3xl text-center font-bold border border-solid mb-4">
+          )}
+          {!isAnalysisMode && !reviewData?.summary && (
+             <div className="p-3 text-3xl text-center font-bold border border-solid mb-4">
               {data.Result || data.result}
             </div>
           )}
-          <ReviewPanel
-            moveList={moveList}
-            currentMoveIndex={currentMoveIndex}
-            moveTo={moveTo}
-            currentMove={currentMove}
-            onShowMove={onShowMove}
-            lineRefs={lineRefs}
-          />
 
-          {reviewData && reviewData.summary && (
+          {!isAnalysisMode && (
+            <ReviewPanel
+              moveList={moveList}
+              currentMoveIndex={currentMoveIndex}
+              moveTo={moveTo}
+              currentMove={currentMove}
+              onShowMove={onShowMove}
+              lineRefs={lineRefs}
+              isAnalysisMode={isAnalysisMode} 
+              analysisLines={[]} 
+              analysisFen={analysisFen} 
+            />
+          )}
+          
+          {!isAnalysisMode && reviewData && reviewData.summary && (
             <EloSummary data={reviewData.summary} />
           )}
         </div>
       </div>
-      {reviewStatus && !reviewStatus.done && (
+      {reviewStatus && !reviewStatus.done && !isAnalysisMode && (
         <ReviewLoading data={reviewStatus} />
       )}
     </div>
