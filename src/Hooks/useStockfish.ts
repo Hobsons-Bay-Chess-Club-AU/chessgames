@@ -1,15 +1,28 @@
 import { useEffect, useState } from 'react';
 import { StockfishEngine } from './StockfishEngine';
-import { ReviewStatus, GameReview } from '../Shared/Model';
+import { ReviewStatus, GameReview, BestMoveOutput } from '../Shared/Model';
 import sortBy from 'lodash/sortBy';
 
 export function useStockfish() {
-  const [bestMoveResult, setBestMoveResult] = useState<any>();
-  const [reviewData, setReviewData] = useState<GameReview>();
+  const [bestMoveResult, setBestMoveResult] = useState<BestMoveOutput | undefined>();
+  const [reviewData, setReviewData] = useState<GameReview | undefined>();
+  const [topMovesAnalysis, setTopMovesAnalysis] = useState<BestMoveOutput | undefined>();
   const [engine, setEngine] = useState<StockfishEngine>();
   const [reviewStatus, setReviewStatus] = useState<ReviewStatus | undefined>(
     undefined
   );
+
+  const fetchTopMoves = async (fen: string) => {
+    if (engine) {
+      try {
+        const result = await engine.getTopMoves(fen, 4); // Fetch top 4 moves
+        setTopMovesAnalysis(result);
+      } catch (error) {
+        console.error("Error fetching top moves:", error);
+        setTopMovesAnalysis(undefined); // Or handle error appropriately
+      }
+    }
+  };
 
   useEffect(() => {
     const initStockfishWorkerEngine = async () => {
@@ -55,5 +68,7 @@ export function useStockfish() {
     reviewData,
     engine,
     reviewStatus,
+    topMovesAnalysis,
+    fetchTopMoves,
   };
 }
