@@ -1,119 +1,151 @@
 import React, { useEffect, useRef } from 'react';
-import { GameTreeNode, GameTree } from '../Shared/GameTree';
+import { GameTreeNode } from '../Shared/GameTree';
 
-interface MoveNodeDisplayProps {
-  node: GameTreeNode;
+const INDENT_SIZE = 20; // pixels for each depth level
+
+interface PgnMoveEntryProps {
+  node: GameTreeNode; // The current move node to display.
+  depth: number; // Current indentation level for this move.
   onNavigateToNode: (nodeId: string) => void;
-  isCurrentNode: boolean;
-  isCurrentPath: boolean; // Is this node part of the direct path to the currentNode?
-  depth: number; // For indentation of variations
-  currentLineNodes: GameTreeNode[]; // For determining if next node is inline or variation
+  isCurrentNode: (nodeId: string) => boolean;
+  isNodeOnCurrentPath: (nodeId: string) => boolean;
 }
 
-const MoveNodeDisplay: React.FC<MoveNodeDisplayProps> = ({
+const PgnMoveEntry: React.FC<PgnMoveEntryProps> = ({
   node,
+  depth,
   onNavigateToNode,
   isCurrentNode,
-  isCurrentPath,
-  depth,
-  currentLineNodes,
+  isNodeOnCurrentPath,
 }) => {
-  const moveRef = useRef<HTMLSpanElement>(null);
+  const primaryMoveRef = useRef<HTMLSpanElement>(null);
+  const pairedBlackMoveRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    if (isCurrentNode && moveRef.current) {
-      moveRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (isCurrentNode(node.id) && primaryMoveRef.current) {
+      primaryMoveRef.current.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
     }
-  }, [isCurrentNode]);
+  }, [isCurrentNode, node.id]);
 
-  if (!node.move) {
-    return null; // Root node has no move to display here
+  if (!node.move) return null;
+
+  const isNodeWhite = node.move.color === 'w';
+  
+  let movePrefix = "";
+  if (isNodeWhite) {
+    movePrefix = `${node.startingMoveNumber}. `;
+  } else { 
+    movePrefix = `${node.startingMoveNumber}... `;
   }
 
-  const moveText =
-    node.move.color === 'w'
-      ? `${node.startingMoveNumber}. ${node.san}`
-      : `${node.startingMoveNumber}... ${node.san}`;
-
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent event bubbling if moves are nested in clickable elements
-    onNavigateToNode(node.id);
-  };
-
-  const style: React.CSSProperties = {
-    marginLeft: `${depth * 10}px`, // Indentation for variations
-    fontWeight: isCurrentNode ? 'bold' : (isCurrentPath ? '500' : 'normal'),
+  const moveSpanStyle = (isActiveNode: boolean, isOnPath: boolean, isPairedBlack = false): React.CSSProperties => ({
     cursor: 'pointer',
-    display: 'inline-block',
-    marginRight: '4px',
     padding: '1px 3px',
     borderRadius: '3px',
     whiteSpace: 'nowrap',
-  };
+    fontWeight: isActiveNode ? 'bold' : (isOnPath ? '500' : 'normal'),
+    backgroundColor: isActiveNode ? '#007bff' : (isOnPath ? '#e9ecef' : 'transparent'),
+    color: isActiveNode ? 'white' : 'inherit',
+    marginLeft: isPairedBlack ? '5px' : undefined, 
+    marginRight: '3px', 
+  });
 
-  if (isCurrentNode) {
-    style.backgroundColor = '#007bff'; // Bootstrap primary blue
-    style.color = 'white';
-  } else if (isCurrentPath) {
-    style.backgroundColor = '#e9ecef'; // Light grey for path
+  let primaryBlackResponse: GameTreeNode | null = null;
+  let variationsOnWhite: GameTreeNode[] = [];
+  let mainContinuation: GameTreeNode | null = null;
+
+  const children = node.children;
+  if (isNodeWhite) {
+    if (children.length > 0) {
+      const firstChild = children[0];
+      if (firstChild.move?.color === 'b' && (firstChild.isMainLine || children.length === 1)) {
+        primaryBlackResponse = firstChild;
+        variationsOnWhite = children.slice(1); 
+        if (primaryBlackResponse && primaryBlackResponse.children.length > 0) {
+          // Main continuation is the first child of the black response, if it's main line or only child
+          const blackResponseFirstChild = primaryBlackResponse.children[0];
+          if (blackResponseFirstChild.isMainLine || primaryBlackResponse.children.length === 1) {
+            mainContinuation = blackResponseFirstChild;
+          }
+           // Other children of black response are variations on black's move
+          variationsOnWhite.push(...primaryBlackResponse.children.slice(mainContinuation ? 1 : 0));
+        }
+      } else {
+        // All children of white are variations if no primary black response
+        variationsOnWhite = children;
+      }
+    }
+  } else { // Node is Black
+    if (children.length > 0) {
+      // First child of black is main continuation
+      mainContinuation = children[0];
+      variationsOnWhite = children.slice(1); // Other children are variations on black's move
+    }
   }
-
-
-  // Determine how to render children
-  // - If only one child, and it's the next move in the current line of play, render it inline.
-  // - Otherwise, render children as variations (indented, potentially grouped).
-  const mainContinuationChild = node.children.find(child => currentLineNodes.some(cn => cn.id === child.id) || child.isMainLine);
-
+  
+  useEffect(() => {
+    if (primaryBlackResponse && isCurrentNode(primaryBlackResponse.id) && pairedBlackMoveRef.current) {
+      pairedBlackMoveRef.current.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+    }
+  }, [isCurrentNode, primaryBlackResponse]);
 
   return (
-    <>
-      <span ref={moveRef} style={style} onClick={handleClick} title={`FEN: ${node.fen}`}>
-        {moveText}
+    // This div is for the current line: White move, optional Black move, and any variations on the White move.
+    // Continuations (next White move) will be a new PgnMoveEntry at the same depth.
+    <div style={{ 
+        paddingLeft: `${depth * INDENT_SIZE}px`, 
+        marginTop: '2px', 
+        marginBottom: '2px',
+        lineHeight: '1.7',
+      }}>
+      {/* White move (or Black if starting a variation line) */}
+      <span
+        ref={primaryMoveRef}
+        style={moveSpanStyle(isCurrentNode(node.id), isNodeOnCurrentPath(node.id))}
+        onClick={() => onNavigateToNode(node.id)}
+      >
+        {movePrefix}{node.san}
       </span>
 
-      {/* Render main continuation if it exists and is NOT a variation start */}
-      {mainContinuationChild && node.children.length === 1 && (
-         <MoveNodeDisplay
-            key={mainContinuationChild.id}
-            node={mainContinuationChild}
-            onNavigateToNode={onNavigateToNode}
-            isCurrentNode={isCurrentNode && mainContinuationChild.id === node.id} // This is wrong, should be based on GameViewer's currentNode
-            isCurrentPath={currentLineNodes.some(cn => cn.id === mainContinuationChild.id)}
-            depth={0} // No new indentation for direct continuation of a line
-            currentLineNodes={currentLineNodes}
-          />
+      {/* Paired Black move */}
+      {primaryBlackResponse && primaryBlackResponse.move && (
+        <span
+          ref={pairedBlackMoveRef}
+          style={moveSpanStyle(isCurrentNode(primaryBlackResponse.id), isNodeOnCurrentPath(primaryBlackResponse.id), true)}
+          onClick={() => onNavigateToNode(primaryBlackResponse.id)}
+        >
+          {primaryBlackResponse.san}
+        </span>
       )}
-      
-      {/* Render variations (children that are not the mainContinuationChild, or all children if no clear mainContinuation) */}
-      {/* This part needs careful thought to integrate with the main line display logic.
-          A common PGN style is (variation moves)
-      */}
-      {node.children.length > (mainContinuationChild && node.children.length === 1 ? 1 : 0) && ( // Has variations
-        <div style={{ marginLeft: `${(depth +1) * 5}px`, borderLeft: '1px solid #ccc', paddingLeft: '5px' }}>
-          {node.children.map(childNode => {
-            if (mainContinuationChild && childNode.id === mainContinuationChild.id && node.children.length ===1) return null; // Already rendered inline
 
-            // Check if this child is part of the current main displayed line
-            const isChildOnCurrentPath = currentLineNodes.some(cn => cn.id === childNode.id);
-            
-            return (
-                <div key={childNode.id} style={{ marginTop: '2px'}}> {/* Each variation on a new "block" line */}
-                    {`(`}
-                    <MoveNodeDisplay
-                        node={childNode}
-                        onNavigateToNode={onNavigateToNode}
-                        isCurrentNode={false} // This needs to be passed correctly based on GameViewer's currentNode
-                        isCurrentPath={isChildOnCurrentPath}
-                        depth={mainContinuationChild && childNode.id === mainContinuationChild.id ? 0 : depth +1 } // Indent variations
-                        currentLineNodes={currentLineNodes}
-                    />
-                    {`)`}
-                </div>
-            );
-          })}
+      {/* Variations on the White move (or Black if it started the line) */}
+      {variationsOnWhite.map(varNode => (
+        <div key={varNode.id} style={{ display: 'block' }}> {/* Each variation on a new line */}
+          <span style={{ paddingLeft: `${(depth +1) * INDENT_SIZE}px` }}>(</span>
+          <div style={{ display: 'inline-block' }}>
+            <PgnMoveEntry
+              node={varNode}
+              depth={0} // Relative depth within the parenthesis
+              onNavigateToNode={onNavigateToNode}
+              isCurrentNode={isCurrentNode}
+              isNodeOnCurrentPath={isNodeOnCurrentPath}
+            />
+          </div>
+          <span>)</span>
         </div>
-      )}
-    </>
+      ))}
+      
+      {/* Main line continuation (next White move) */}
+      {mainContinuation && (
+        <PgnMoveEntry
+          node={mainContinuation}
+          depth={depth} // Main continuation stays at the same depth
+          onNavigateToNode={onNavigateToNode}
+          isCurrentNode={isCurrentNode}
+          isNodeOnCurrentPath={isNodeOnCurrentPath}
+        />
+      ))}
+    </div>
   );
 };
 
@@ -132,34 +164,28 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
     return <div className="p-2">Loading game tree or no current node...</div>;
   }
 
-  // Get the current line of play from root to the currentNode
-  const currentLineNodes = gameTree.getMovesToNode(currentNode.id);
-
-  // We will render the game starting from the root, displaying the main line
-  // and then branching out for variations at each step of the main line.
-
-  // This is a simplified recursive render starting from root.
-  // A more complex render might build lines of text (e.g., "1. e4 e5 2. Nf3 (2... d6) Nc6")
-  // For now, each MoveNodeDisplay handles its direct children.
+  const isCurrentNodeCallback = React.useCallback((nodeId: string) => nodeId === currentNode.id, [currentNode.id]);
+  
+  const currentLineNodeIds = React.useMemo(() => 
+    gameTree.getMovesToNode(currentNode.id).map(n => n.id),
+    [gameTree, currentNode.id]
+  );
+  const isNodeOnCurrentPathCallback = React.useCallback((nodeId: string) => currentLineNodeIds.includes(nodeId), [currentLineNodeIds]);
 
   return (
-    <div className="p-2 overflow-y-auto h-full" style={{ fontFamily: 'monospace', fontSize: '13px', lineHeight: '1.6' }}>
+    <div className="p-2 overflow-y-auto h-full" style={{ fontFamily: 'monospace', fontSize: '13px' }}>
       <h3 className="text-lg font-semibold mb-2 sticky top-0 bg-white z-10 border-b">Game Moves</h3>
       {gameTree.rootNode.children.length === 0 && <p className="text-gray-500">No moves yet. Make a move on the board.</p>}
       
-      {/* Start rendering from the children of the root node */}
-      {/* Each child of the root is the beginning of a main line or a major variation from start */}
-      {gameTree.rootNode.children.map(childOfRoot => (
-        <div key={childOfRoot.id} style={{ marginBottom: '8px' }}> {/* Each top-level line from root */}
-          <MoveNodeDisplay
-            node={childOfRoot}
-            onNavigateToNode={onNavigateToNode}
-            isCurrentNode={currentNode.id === childOfRoot.id}
-            isCurrentPath={currentLineNodes.some(n => n.id === childOfRoot.id)}
-            depth={0}
-            currentLineNodes={currentLineNodes}
-          />
-        </div>
+      {gameTree.rootNode.children.map(childNode => (
+        <PgnMoveEntry
+          key={childNode.id}
+          node={childNode} 
+          depth={0}       
+          onNavigateToNode={onNavigateToNode}
+          isCurrentNode={isCurrentNodeCallback}
+          isNodeOnCurrentPath={isNodeOnCurrentPathCallback}
+        />
       ))}
     </div>
   );

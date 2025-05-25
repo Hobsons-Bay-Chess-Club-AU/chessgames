@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react'; // Added useCallback
 import { StockfishEngine } from './StockfishEngine';
 import { ReviewStatus, GameReview, BestMoveOutput } from '../Shared/Model';
 import sortBy from 'lodash/sortBy';
@@ -12,17 +12,18 @@ export function useStockfish() {
     undefined
   );
 
-  const fetchTopMoves = async (fen: string) => {
+  const fetchTopMoves = useCallback(async (fen: string, currentDepth: number) => { // Added currentDepth
     if (engine) {
       try {
-        const result = await engine.getTopMoves(fen, 4); // Fetch top 4 moves
+        // Pass currentDepth to engine.getTopMoves. Assuming count of 4 is desired.
+        const result = await engine.getTopMoves(fen, 4, currentDepth); 
         setTopMovesAnalysis(result);
       } catch (error) {
         console.error("Error fetching top moves:", error);
-        setTopMovesAnalysis(undefined); // Or handle error appropriately
+        setTopMovesAnalysis(undefined); 
       }
     }
-  };
+  }, [engine, setTopMovesAnalysis]); // setTopMovesAnalysis is stable
 
   useEffect(() => {
     const initStockfishWorkerEngine = async () => {
@@ -41,13 +42,12 @@ export function useStockfish() {
           }
 
           if (type === 'move-update') {
-            // setReviewStatus(data);
             const lines = data.lines;
             const mateMoves = lines.filter((x: any) => x.score.type === 'mate');
             const cpMoves = lines.filter((x: any) => x.score.type === 'cp');
             sortBy(mateMoves, (x) => x.score.value);
             sortBy(cpMoves, (x) => x.score.value, 'desc');
-            const bestLines = [...mateMoves, ...cpMoves]; //.splice(0, 5);
+            const bestLines = [...mateMoves, ...cpMoves]; 
             console.log(bestLines);
           }
         })
@@ -61,7 +61,7 @@ export function useStockfish() {
       console.log('Clean up stockfish engine after use');
       if (engine) engine.quit();
     };
-  }, [engine]);
+  }, [engine]); // engine dependency is correct here
 
   return {
     bestMoveResult,

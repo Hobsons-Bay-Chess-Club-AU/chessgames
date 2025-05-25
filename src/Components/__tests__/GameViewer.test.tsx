@@ -6,6 +6,9 @@ import { GameViewer } from '../GameViewer';
 import { GameData, StockfishLine } from '../../Shared/Model';
 import { GameTree, GameTreeNode } from '../../Shared/GameTree';
 
+// Default depth from useStockfishOptions
+const DEFAULT_ENGINE_DEPTH = 12; 
+
 // --- Mocks ---
 
 // Mock useStockfish
@@ -13,50 +16,68 @@ const mockFetchTopMoves = jest.fn();
 const mockEngineReviewGame = jest.fn();
 jest.mock('../../Hooks/useStockfish', () => ({
   useStockfish: () => ({
-    engine: { reviewGame: mockEngineReviewGame }, // Mock engine object with methods if used
+    engine: { reviewGame: mockEngineReviewGame }, 
     bestMoveResult: undefined,
     reviewData: undefined,
     reviewStatus: undefined,
     fetchTopMoves: mockFetchTopMoves,
-    topMovesAnalysis: undefined, // Provide initial state for topMovesAnalysis
+    topMovesAnalysis: undefined, 
   }),
 }));
 
+// Mock useStockfishOptions to control depth
+jest.mock('../../Hooks/useStockfishOptions', () => ({
+  __esModule: true,
+  default: () => [{ depth: DEFAULT_ENGINE_DEPTH }, jest.fn()],
+}));
+
+
 // Mock GameTree
 const mockAddMove = jest.fn();
-const mockNavigateToNode = jest.fn(); // Not directly used by GameViewer, but GameTree method
+const mockNavigateToNode = jest.fn(); 
 const mockGetCurrentNode = jest.fn();
 const mockGetParentNode = jest.fn();
-const mockGetMovesToNode = jest.fn();
-const mockFormatPathToPgn = jest.fn();
-const mockRootNode = { id: 'root', fen: 'startFEN', children: [], move: null, san: '', parentId: null, isMainLine: true, startingMoveNumber: 1 };
+const mockGetMovesToNode = jest.fn().mockReturnValue([]); // Default to empty array
+const mockFormatPathToPgn = jest.fn().mockReturnValue(''); // Default to empty string
+const mockRootNode: GameTreeNode = { id: 'root', fen: 'startFEN', children: [], move: null, san: '', parentId: null, isMainLine: true, startingMoveNumber: 1 };
 const mockNodesMap = new Map<string, GameTreeNode>();
 mockNodesMap.set('root', mockRootNode);
 
 jest.mock('../../Shared/GameTree', () => {
   return {
     GameTree: jest.fn().mockImplementation((initialFen, mainLineSANs) => {
-      // Simulate main line construction if mainLineSANs are provided
-      let lastNode = mockRootNode;
+      let lastNode = { ...mockRootNode, fen: initialFen || 'startFEN' }; // Ensure rootNode has the initialFen
+      mockNodesMap.clear(); // Clear map for new instance
+      mockNodesMap.set(lastNode.id, lastNode);
+
       if (mainLineSANs && mainLineSANs.length > 0) {
         mainLineSANs.forEach((san: string, index: number) => {
-          const childNode = { 
-            id: `node-${index}`, san, fen: `fen-for-${san}`, 
-            parentId: lastNode.id, children: [], move: { san } as any, 
-            isMainLine: true, startingMoveNumber: Math.floor(index/2)+1 
+          const moveColor = index % 2 === 0 ? 'w' : 'b'; // Alternate color
+          const childNode: GameTreeNode = { 
+            id: `node-${index}`, 
+            san, 
+            fen: `fen-for-${san}`, 
+            parentId: lastNode.id, 
+            children: [], 
+            move: { san, from: 'a1', to: 'a2', color: moveColor } as any, // Add basic move object
+            isMainLine: true, 
+            startingMoveNumber: Math.floor(index/2)+1 
           };
           mockNodesMap.set(childNode.id, childNode);
           if(lastNode.children) lastNode.children.push(childNode); else lastNode.children = [childNode];
-          if(index === 0 && mockRootNode.children.length === 0) mockRootNode.children.push(childNode); // ensure root has child
+          // Ensure rootNode's children array is also updated if lastNode is rootNode
+          if (lastNode.id === mockRootNode.id) {
+             mockRootNode.children = [childNode]; // Simplified: assumes first main line move is child of root
+          }
           lastNode = childNode;
         });
       }
-      mockGetCurrentNode.mockReturnValue(lastNode); // getCurrentNode returns the last node of main line initially
+      mockGetCurrentNode.mockReturnValue(lastNode); 
 
       return {
-        rootNode: mockRootNode,
+        rootNode: mockRootNode, // Use the consistent mockRootNode reference
         currentNodeId: lastNode.id,
-        nodes: mockNodesMap, // Provide the map for handleNavigateToNode
+        nodes: mockNodesMap, 
         addMove: mockAddMove,
         navigateToNode: mockNavigateToNode,
         getCurrentNode: mockGetCurrentNode,
@@ -70,8 +91,8 @@ jest.mock('../../Shared/GameTree', () => {
 
 // Mock Child Components
 jest.mock('react-chessboard', () => ({ Chessboard: (props: any) => <div data-testid="chessboard" data-fen={props.position} onClick={() => props.onPieceDrop && props.onPieceDrop('e2', 'e4', 'wP')} /> }));
-jest.mock('../ReviewPanel', () => ({ ReviewPanel: (props: any) => <div data-testid="review-panel" onClick={() => props.onNavigateToNode && props.onNavigateToNode('someNodeId')} /> }));
-jest.mock('../TopMovesPanel', () => ({ TopMovesPanel: (props: any) => <div data-testid="top-moves-panel" onClick={() => props.onSelectMove && props.onSelectMove({ pv: 'd2d4' } as StockfishLine)} /> }));
+jest.mock('../ReviewPanel', () => ({ ReviewPanel: (props: any) => <div data-testid="review-panel" onClick={() => props.onNavigateToNode && props.onNavigateToNode('someNodeIdFromPanel')} /> }));
+jest.mock('../TopMovesPanel', () => ({ TopMovesPanel: (props: any) => <div data-testid="top-moves-panel" onClick={() => props.onSelectMove && props.onSelectMove({ pv: 'd2d4 d7d5' } as StockfishLine)} /> })); // Ensure pv has at least one move
 jest.mock('../EloBar', () => ({ EloBar: () => <div data-testid="elo-bar" /> }));
 jest.mock('../ReviewLoading', () => () => <div data-testid="review-loading" />);
 jest.mock('../CapturedPieces', () => () => <div data-testid="captured-pieces" />);
@@ -86,11 +107,11 @@ const mockGameData: GameData = {
   Black: 'Player B',
   Result: '1-0',
   ECO: 'A00',
-  Moves: ['e4', 'e5', 'Nf3', 'Nc6'], // SAN moves
+  Moves: ['e4', 'e5', 'Nf3', 'Nc6'], 
   WhiteElo: '1500',
   BlackElo: '1500',
-  LastPosition: 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3', // FEN for after Nc6
-  fen: undefined, // Test case where initial FEN comes from LastPosition if fen is undefined
+  LastPosition: 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3', 
+  fen: undefined, 
   pgn: '1. e4 e5 2. Nf3 Nc6',
 };
 
@@ -98,21 +119,29 @@ const mockGameData: GameData = {
 describe('GameViewer Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset root node children for each test if GameTree mock is stateful across tests
-    mockRootNode.children = [];
-    mockNodesMap.clear();
-    mockNodesMap.set('root', mockRootNode);
+    // Reset mockRootNode for each test to avoid state leakage
+    mockRootNode.children = []; 
+    mockRootNode.fen = 'startFEN'; // Reset FEN
 
-    // Default mock for getCurrentNode to return root initially or after main line processing.
-    // The GameTree mock constructor handles setting it to the end of main line.
-    mockGetCurrentNode.mockReturnValue(mockRootNode); 
+    // Default mock for getCurrentNode to return a fresh rootNode
+    mockGetCurrentNode.mockImplementation(() => ({ ...mockRootNode })); 
     
-    // Default mock for addMove to simulate successful move addition
     mockAddMove.mockImplementation((moveInput, parentId) => {
-      const newNode = { id: `newNode-${Date.now()}`, fen: 'newFEN', san: (moveInput as any).san || 'd4', parentId, children: [], move: {} as any, isMainLine: false, startingMoveNumber: 1 };
+      const san = typeof moveInput === 'string' ? moveInput : moveInput.from + moveInput.to;
+      const newNode: GameTreeNode = { 
+        id: `newNode-${Date.now()}`, 
+        fen: 'newFEN', 
+        san: san, 
+        parentId, 
+        children: [], 
+        move: { san } as any, 
+        isMainLine: false, 
+        startingMoveNumber: 1 
+      };
       mockNodesMap.set(newNode.id, newNode);
       return newNode;
     });
+    mockGetMovesToNode.mockReturnValue([mockRootNode]); // Default for path to root
   });
 
   test('Initial Load: initializes GameTree, Chessboard, ReviewPanel, and fetches top moves', () => {
@@ -121,128 +150,123 @@ describe('GameViewer Component', () => {
     expect(GameTree).toHaveBeenCalledWith(mockGameData.LastPosition, mockGameData.Moves);
     
     const chessboard = screen.getByTestId('chessboard');
-    // getCurrentNode is mocked to return the last node of main line by GameTree mock constructor
     const lastMainLineNode = mockNodesMap.get(`node-${mockGameData.Moves.length -1}`);
     expect(chessboard).toHaveAttribute('data-fen', lastMainLineNode?.fen || mockRootNode.fen);
 
     expect(screen.getByTestId('review-panel')).toBeInTheDocument();
-    expect(mockFetchTopMoves).toHaveBeenCalledWith(lastMainLineNode?.fen || mockRootNode.fen, expect.any(Number));
+    expect(mockFetchTopMoves).toHaveBeenCalledWith(lastMainLineNode?.fen || mockRootNode.fen, DEFAULT_ENGINE_DEPTH);
   });
 
   test('handleMoveOnBoard: calls gameTree.addMove, updates current node, and fetches top moves', () => {
+    const initialCurrentNode = { ...mockRootNode, id: 'root-for-move', fen: 'rootFEN-for-move' };
+    mockGetCurrentNode.mockReturnValue(initialCurrentNode); // Set current node for this test
+
     render(<GameViewer data={mockGameData} />);
     
-    const newMoveNode = { id: 'd4-node', fen: 'd4-fen', san: 'd4', parentId: 'root', children: [], move: {} as any, isMainLine: false, startingMoveNumber: 1 };
-    mockAddMove.mockReturnValue(newMoveNode); // Ensure addMove returns a node
-    mockGetCurrentNode.mockReturnValue(mockRootNode); // Assume current node is root for this interaction
+    const newMoveNodeData = { id: 'd4-node', fen: 'd4-fen', san: 'd4', parentId: initialCurrentNode.id, children: [], move: {} as any, isMainLine: false, startingMoveNumber: 1 };
+    mockAddMove.mockReturnValue(newMoveNodeData); 
 
     const chessboard = screen.getByTestId('chessboard');
-    fireEvent.click(chessboard); // Simulates onPieceDrop('e2', 'e4', 'wP') due to mock
+    fireEvent.click(chessboard); 
 
     expect(mockAddMove).toHaveBeenCalledWith(
       { from: 'e2', to: 'e4', promotion: 'q' },
-      mockRootNode.id
+      initialCurrentNode.id
     );
-    expect(mockFetchTopMoves).toHaveBeenCalledWith(newMoveNode.fen, expect.any(Number));
+    expect(mockFetchTopMoves).toHaveBeenCalledWith(newMoveNodeData.fen, DEFAULT_ENGINE_DEPTH);
   });
   
   test('Navigation Controls: handleFirstMove', () => {
     render(<GameViewer data={mockGameData} />);
-    mockNodesMap.set(mockRootNode.id, mockRootNode); // Ensure root node is in map for handleNavigateToNode
+    mockNodesMap.set(mockRootNode.id, mockRootNode); 
     fireEvent.click(screen.getByTitle('First Move'));
-    expect(mockFetchTopMoves).toHaveBeenCalledWith(mockRootNode.fen, expect.any(Number));
+    expect(mockFetchTopMoves).toHaveBeenCalledWith(mockRootNode.fen, DEFAULT_ENGINE_DEPTH);
   });
 
   test('Navigation Controls: handlePreviousMove', () => {
-    const childNode = { ...mockRootNode, id: 'child', parentId: 'root', san: 'e4', fen: 'childFEN' };
-    mockRootNode.children = [childNode]; // Setup parent-child
-    mockGetCurrentNode.mockReturnValue(childNode); // Current is child
-    mockGetParentNode.mockReturnValue(mockRootNode); // Mock getParentNode
-    mockNodesMap.set(childNode.id, childNode);
-    mockNodesMap.set(mockRootNode.id, mockRootNode);
-
+    const parentNodeData = { ...mockRootNode, id: 'parent-id', fen: 'parentFEN' };
+    const childNodeData = { ...mockRootNode, id: 'child-id', parentId: 'parent-id', san: 'e4', fen: 'childFEN' };
+    mockGetCurrentNode.mockReturnValue(childNodeData); 
+    mockGetParentNode.mockReturnValue(parentNodeData); 
+    mockNodesMap.set(childNodeData.id, childNodeData);
+    mockNodesMap.set(parentNodeData.id, parentNodeData);
 
     render(<GameViewer data={mockGameData} />);
     fireEvent.click(screen.getByTitle('Previous Move'));
-    expect(mockGetParentNode).toHaveBeenCalledWith(childNode.id);
-    expect(mockFetchTopMoves).toHaveBeenCalledWith(mockRootNode.fen, expect.any(Number));
+    expect(mockGetParentNode).toHaveBeenCalledWith(childNodeData.id);
+    expect(mockFetchTopMoves).toHaveBeenCalledWith(parentNodeData.fen, DEFAULT_ENGINE_DEPTH);
   });
 
   test('Navigation Controls: handleNextMove', () => {
-    const childNode = { id: 'child', fen: 'childFEN', san: 'e4', parentId: 'root', children: [], move: {} as any, isMainLine: true, startingMoveNumber: 1 };
-    mockRootNode.children = [childNode];
-    mockGetCurrentNode.mockReturnValue(mockRootNode); // Current is root, next is child
-    mockNodesMap.set(childNode.id, childNode);
+    const childNodeData = { id: 'child-id', fen: 'childFEN', san: 'e4', parentId: 'root-for-next', children: [], move: {} as any, isMainLine: true, startingMoveNumber: 1 };
+    const rootForNextData = { ...mockRootNode, id: 'root-for-next', children: [childNodeData] };
+    mockGetCurrentNode.mockReturnValue(rootForNextData); 
+    mockNodesMap.set(childNodeData.id, childNodeData);
+    mockNodesMap.set(rootForNextData.id, rootForNextData);
+
 
     render(<GameViewer data={mockGameData} />);
     fireEvent.click(screen.getByTitle('Next Move'));
-    expect(mockFetchTopMoves).toHaveBeenCalledWith(childNode.fen, expect.any(Number));
+    expect(mockFetchTopMoves).toHaveBeenCalledWith(childNodeData.fen, DEFAULT_ENGINE_DEPTH);
   });
   
   test('Navigation Controls: handleLastMove', () => {
-    // Setup a deeper main line for last move
-    const node1 = { id: 'node1', fen: 'fen1', san: 'e4', parentId: 'root', children: [], move: {} as any, isMainLine: true, startingMoveNumber: 1 };
-    const node2 = { id: 'node2', fen: 'fen2', san: 'e5', parentId: 'node1', children: [], move: {} as any, isMainLine: true, startingMoveNumber: 1 };
-    mockRootNode.children = [node1];
-    node1.children = [node2];
-    mockNodesMap.set(node1.id, node1);
-    mockNodesMap.set(node2.id, node2);
-    mockGetCurrentNode.mockReturnValue(mockRootNode); // Start from root for this test of handleLastMove
+    const node1Data = { id: 'node1-last', fen: 'fen1-last', san: 'e4', parentId: 'root-for-last', children: [], move: {} as any, isMainLine: true, startingMoveNumber: 1 };
+    const node2Data = { id: 'node2-last', fen: 'fen2-last', san: 'e5', parentId: 'node1-last', children: [], move: {} as any, isMainLine: true, startingMoveNumber: 1 };
+    const rootForLastData = { ...mockRootNode, id: 'root-for-last', children: [node1Data] };
+    node1Data.children = [node2Data]; // node1 has node2 as child
+    
+    mockGetCurrentNode.mockReturnValue(rootForLastData); 
+    mockNodesMap.set(rootForLastData.id, rootForLastData);
+    mockNodesMap.set(node1Data.id, node1Data);
+    mockNodesMap.set(node2Data.id, node2Data);
 
     render(<GameViewer data={mockGameData} />);
     fireEvent.click(screen.getByTitle('Last Move'));
-    expect(mockFetchTopMoves).toHaveBeenCalledWith(node2.fen, expect.any(Number)); // Should navigate to node2
+    expect(mockFetchTopMoves).toHaveBeenCalledWith(node2Data.fen, DEFAULT_ENGINE_DEPTH); 
   });
 
-  test('TopMovesPanel Interaction (onSelectAnalysisMove): calls gameTree.addMove and fetches top moves', () => {
-    // Set isAnalysisMode to true to render TopMovesPanel
-    // This requires a way to set isAnalysisMode or trigger its set.
-    // For simplicity, we assume TopMovesPanel is rendered.
-    // If GameViewer's state controls this, we might need to simulate the button click first.
-
-    render(
-        <GameViewer data={mockGameData} />
-    );
-    // Simulate clicking the 'LuBrain' button to toggle isAnalysisMode
-    const analysisModeButton = screen.getByTitle('Start Exploration'); // Or "Exit Exploration" if default is true
-    fireEvent.click(analysisModeButton); // Now isAnalysisMode should be true
-
-    const newMoveNode = { id: 'd4-node-from-topmoves', fen: 'd4-fen-topmoves', san: 'd4', parentId: 'root', children: [], move: {} as any, isMainLine: false, startingMoveNumber: 1 };
-    mockAddMove.mockReturnValue(newMoveNode);
-    mockGetCurrentNode.mockReturnValue(mockRootNode); // Assume current node is root
-
-    const topMovesPanel = screen.getByTestId('top-moves-panel');
-    fireEvent.click(topMovesPanel); // Simulates onSelectMove with { pv: 'd2d4' }
-
-    expect(mockAddMove).toHaveBeenCalledWith(
-      { from: 'd2', to: 'd4', promotion: 'q' }, // d2d4 parsed from pv
-      mockRootNode.id
-    );
-    expect(mockFetchTopMoves).toHaveBeenCalledWith(newMoveNode.fen, expect.any(Number));
-  });
-  
-  test('handleNavigateToNode (from ReviewPanel): updates current node and fetches top moves', () => {
-    const targetNodeId = 'targetNode';
-    const targetNode = { id: targetNodeId, fen: 'targetFEN', san: 'Nf3', parentId: 'someParent', children: [], move: {} as any, isMainLine: false, startingMoveNumber: 2 };
-    mockNodesMap.set(targetNodeId, targetNode); // Make sure the node is in our mock map
+  test('TopMovesPanel Interaction (onSelectAnalysisMove): calls gameTree.addMove and fetches top moves', async () => {
+    const initialCurrentNode = { ...mockRootNode, id: 'root-for-topmoves', fen: 'rootFEN-for-topmoves' };
+    mockGetCurrentNode.mockReturnValue(initialCurrentNode);
 
     render(<GameViewer data={mockGameData} />);
     
-    // Simulate ReviewPanel calling onNavigateToNode
-    // The mock ReviewPanel calls onNavigateToNode('someNodeId') on click
-    // We'll make 'someNodeId' our targetNodeId for this test
+    // Simulate clicking the 'LuBrain' button to toggle isAnalysisMode to true
+    // Assuming initial state of isAnalysisMode is false
+    const analysisModeButton = screen.getByTitle('Start Exploration'); 
+    fireEvent.click(analysisModeButton); 
+
+    const newMoveNodeData = { id: 'd4-node-topmoves', fen: 'd4-fen-topmoves', san: 'd4', parentId: initialCurrentNode.id, children: [], move: {} as any, isMainLine: false, startingMoveNumber: 1 };
+    mockAddMove.mockReturnValue(newMoveNodeData);
+
+    // Wait for TopMovesPanel to be potentially rendered (though it's mocked, the click should work)
+    // The click on TopMovesPanel mock triggers its onSelectMove prop
+    const topMovesPanel = screen.getByTestId('top-moves-panel');
+    fireEvent.click(topMovesPanel); 
+
+    expect(mockAddMove).toHaveBeenCalledWith(
+      { from: 'd2', to: 'd4', promotion: 'q' }, 
+      initialCurrentNode.id
+    );
+    expect(mockFetchTopMoves).toHaveBeenCalledWith(newMoveNodeData.fen, DEFAULT_ENGINE_DEPTH);
+  });
+  
+  test('handleNavigateToNode (from ReviewPanel): updates current node and fetches top moves', () => {
+    const targetNodeId = 'nodeFromPanel';
+    const targetNodeData = { id: targetNodeId, fen: 'targetFEN-panel', san: 'Nf3', parentId: 'someParent', children: [], move: {} as any, isMainLine: false, startingMoveNumber: 2 };
+    mockNodesMap.set(targetNodeId, targetNodeData); 
+
+    render(<GameViewer data={mockGameData} />);
+    
+    // The mock ReviewPanel calls onNavigateToNode('someNodeIdFromPanel') on click.
+    // We need to ensure 'someNodeIdFromPanel' is in our map and points to targetNodeData for this test.
+    mockNodesMap.set('someNodeIdFromPanel', targetNodeData);
+
     const reviewPanelMock = screen.getByTestId('review-panel');
-    // To make this more robust, we'd ideally pass a specific ID from the test
-    // For now, we assume the mock ReviewPanel calls with an ID we can intercept or predict
-    // Let's refine the mock or this test.
-    // For now, we can just call the handler if it's exposed, or rely on the click.
-    // The mock ReviewPanel calls with 'someNodeId'. Let's use that.
-    mockNodesMap.set('someNodeId', targetNode);
-
-
     fireEvent.click(reviewPanelMock);
     
-    expect(mockFetchTopMoves).toHaveBeenCalledWith(targetNode.fen, expect.any(Number));
+    expect(mockFetchTopMoves).toHaveBeenCalledWith(targetNodeData.fen, DEFAULT_ENGINE_DEPTH);
   });
 
 });
