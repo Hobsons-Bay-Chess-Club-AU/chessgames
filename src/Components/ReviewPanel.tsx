@@ -90,8 +90,6 @@ const PgnMoveEntry: React.FC<PgnMoveEntryProps> = ({
   }, [isCurrentNode, primaryBlackResponse]);
 
   return (
-    // This div is for the current line: White move, optional Black move, and any variations on the White move.
-    // Continuations (next White move) will be a new PgnMoveEntry at the same depth.
     <div style={{ 
         paddingLeft: `${depth * INDENT_SIZE}px`, 
         marginTop: '2px', 
