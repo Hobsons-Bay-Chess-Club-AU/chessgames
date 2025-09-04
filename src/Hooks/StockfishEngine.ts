@@ -243,6 +243,26 @@ export class StockfishEngine {
     return this.postEngineRun();
   }
 
+  async getTopMoves(position: string, count: number, depth = 18): Promise<BestMoveOutput> {
+    const start = Date.now();
+    await this.reset();
+    await this.waitForReady();
+    this.data.position = position;
+    this.setOption('MultiPV', count);
+    this.sendUci('ucinewgame');
+    this.sendUci('position fen ' + position);
+    this.sendUci('go depth ' + depth);
+    await this.waitFor('bestmove');
+    this.setOption('MultiPV', 1); // Reset MultiPV to avoid affecting other methods
+    console.log(
+      'getTopMoves found in %d ms depth=%s count=%d',
+      Date.now() - start,
+      depth,
+      count
+    );
+    return await this.postEngineRun();
+  }
+
   simpleClassificationByAccuracy(move: ReviewedMove, prevMove: ReviewedMove) {
     console.log(move, prevMove);
     const classification = 'book';
