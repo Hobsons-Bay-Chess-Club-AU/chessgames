@@ -10,19 +10,19 @@ export function DisplaySelector({ onChange, mode }: IDisplaySelectorProps) {
     <>
       <CgDisplayGrid
         onClick={() => onChange('card')}
-        color={mode === 'card' ? 'green' : ''}
+        color={mode === 'card' ? '#105463' : ''}
         className="cursor-pointer text-xl mr-2"
       />
       <CgList
         onClick={() => onChange('list')}
         className="cursor-pointer text-xl  mr-2 "
-        color={mode === 'list' ? 'green' : ''}
+        color={mode === 'list' ? '#105463' : ''}
       />
 
       <CgMenuCheese
         onClick={() => onChange('table')}
         className="cursor-pointer text-lg"
-        color={mode === 'table' ? 'green' : ''}
+        color={mode === 'table' ? '#105463' : ''}
       />
     </>
   );

@@ -36,17 +36,17 @@ export function ReviewPanel({
           }}
         >
           <div
-            className="flex w-full items-center border-b border-dashed border-gray-300 mb-1"
+            className="flex w-full items-center border-b border-dashed border-primary-300 mb-1"
             key={index}
             data-move-index={Math.round(index / 2)}
           >
-            <span className="font-semibold text-right w-[25px] block mr-2">
+            <span className="font-semibold text-right w-[25px] block mr-2 text-primary-700">
               {index + 1}.
             </span>
             <a
-              className={`font-semibold  cursor-pointer  pl-3 flex-1 hover:bg-slate-600 hover:text-white ${
+              className={`font-semibold cursor-pointer pl-3 flex-1 text-primary-700 hover:bg-primary-600 hover:text-white ${
                 index * 2 === currentMoveIndex
-                  ? 'bg-blue-500 font-medium text-white'
+                  ? 'bg-primary-500 font-medium text-white'
                   : ''
               } ${getClassName(white)}`}
               onClick={() => moveTo(index * 2)}
@@ -54,9 +54,9 @@ export function ReviewPanel({
               {white?.san}
             </a>
             <a
-              className={`font-semibold cursor-pointer pl-3 flex-1 hover:bg-slate-600 hover:text-white ${
+              className={`font-semibold cursor-pointer pl-3 flex-1 text-primary-700 hover:bg-primary-600 hover:text-white ${
                 index * 2 + 1 === currentMoveIndex
-                  ? 'bg-blue-500 font-medium text-white'
+                  ? 'bg-primary-500 font-medium text-white'
                   : ''
               } ${getClassName(black)}`}
               onClick={() => moveTo(index * 2 + 1)}

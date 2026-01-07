@@ -16,7 +16,7 @@ export const ViewerSetting = () => {
     <div className="bg-white p-2 rounded shadow lg:min-w-3/4 min-w-[300px] w-full mt-2">
       <h2 className="text-xl font-semibold mb-4">View settings</h2>
       <div className="mb-4">
-        <label htmlFor="isMute" className="block text-gray-600 font-semibold">
+        <label htmlFor="isMute" className="block text-primary-700 font-semibold">
           Is Mute:
         </label>
         <input
@@ -25,11 +25,11 @@ export const ViewerSetting = () => {
           name="isMute"
           checked={settings.isMute}
           onChange={handleInputChange}
-          className="mt-1 text-blue-500"
+          className="mt-1 text-primary-500"
         />
       </div>
       <div className="mb-4">
-        <label htmlFor="delay" className="block text-gray-600 font-semibold">
+        <label htmlFor="delay" className="block text-primary-700 font-semibold">
           Delay (ms):
         </label>
         <input
@@ -38,7 +38,7 @@ export const ViewerSetting = () => {
           name="delay"
           value={settings.delay}
           onChange={handleInputChange}
-          className="mt-1 p-1 text-blue-500"
+          className="mt-1 p-1 text-primary-500"
         />
       </div>
     </div>

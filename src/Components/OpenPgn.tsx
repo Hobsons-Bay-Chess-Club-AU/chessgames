@@ -45,12 +45,16 @@ export function OpenPgn({ onGameLoad }: OpenPgnProps) {
   };
   return (
     <div>
-      <AiFillFileAdd onClick={() => setIsOpen(true)} />
+      <AiFillFileAdd 
+        onClick={() => setIsOpen(true)} 
+        className="text-primary-600 hover:text-primary-700 cursor-pointer"
+        style={{ fontSize: '1.5rem' }}
+      />
       {isOpen && (
         <Modal onClose={onClose}>
           <div className="container mx-auto mt-8 min-w-[400px]">
             <div className="flex justify-between">
-              <label className="relative cursor-pointer bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+              <label className="relative cursor-pointer bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded">
                 <span>
                   {' '}
                   <BiCloudUpload className="inline mr-2" /> Select a PGN file
@@ -65,7 +69,7 @@ export function OpenPgn({ onGameLoad }: OpenPgnProps) {
 
               {fileContent && (
                 <button
-                  className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                  className="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded"
                   onClick={openGame}
                 >
                   <MdOutlineReviews className="inline mr-2" /> View this game
@@ -76,7 +80,7 @@ export function OpenPgn({ onGameLoad }: OpenPgnProps) {
             <div className="mt-4">
               {fileContent && (
                 <div>
-                  <h2 className="text-xl font-bold mb-2">Game content:</h2>
+                  <h2 className="text-xl font-bold mb-2 text-primary-700">Game content:</h2>
                   <pre className="bg-gray-100 mt-2 p-2 border rounded max-h-[75vh] overflow-y-auto text-sm">
                     {fileContent}
                   </pre>

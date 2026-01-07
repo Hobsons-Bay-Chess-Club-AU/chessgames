@@ -136,6 +136,47 @@ export function GameViewer({ data }: GameViewerProps) {
     setMoveList(lines);
   }, [data.Moves]);
 
+  // Apply custom chessboard colors as fallback
+  useEffect(() => {
+    const applyChessboardColors = () => {
+      const boards = document.querySelectorAll('.react-chessboard');
+      boards.forEach((board) => {
+        const squares = board.querySelectorAll('[style*="background"]');
+        squares.forEach((square: any) => {
+          const style = square.getAttribute('style') || '';
+          // Dark squares (default react-chessboard colors)
+          if (
+            style.includes('rgb(118, 150, 86)') ||
+            style.includes('rgb(181, 136, 99)') ||
+            style.includes('#769656') ||
+            style.includes('#b58863')
+          ) {
+            square.style.backgroundColor = '#105463';
+          }
+          // Light squares
+          if (
+            style.includes('rgb(238, 238, 210)') ||
+            style.includes('rgb(240, 217, 181)') ||
+            style.includes('#eeeed2') ||
+            style.includes('#f0d9b5')
+          ) {
+            square.style.backgroundColor = '#F5E6D3';
+          }
+        });
+      });
+    };
+
+    // Apply immediately and after a short delay to catch dynamically rendered boards
+    applyChessboardColors();
+    const timeout = setTimeout(applyChessboardColors, 100);
+    const interval = setInterval(applyChessboardColors, 500);
+
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, [fen, currentMove]);
+
   useEffect(() => {
     const handleKeyPress = (e: any) => {
       if (e.key === 'ArrowRight') {
@@ -227,18 +268,18 @@ export function GameViewer({ data }: GameViewerProps) {
   return (
     <div className="flex flex-col pt-[230px] sm:pt-0">
       <div>
-        <div className="pt-1 text-center font-semibold">
+        <div className="pt-1 text-center font-semibold text-primary-700">
           {data.Event} - {data.Site} - {data.Year || data.year}
         </div>
-        <div className="pt-1 text-center">{data.ECO}</div>
+        <div className="pt-1 text-center text-primary-600">{data.ECO}</div>
       </div>
 
       <div className="flex flex-col sm:flex-row">
         <EloBar bestMoveResult={bestMoveResult} height={boardSize} />
 
-        <div className="">
+        <div className="flex flex-col items-left">
           <div
-            className="text-xs font-semibold justify-center height-[38px]"
+            className="text-xs font-semibold justify-center height-[38px] text-primary-700"
             style={{ height: 40 }}
           >
             {data.Black} ({data.BlackElo})
@@ -251,19 +292,21 @@ export function GameViewer({ data }: GameViewerProps) {
               }
             />
           </div>
-          <Chessboard
-            options={{
-              position: fen,
-              boardStyle: { width: boardSize },
-              arrows: arrow,
-              squareRenderer: currentMove?.playedMove
-                ? (memoCustomerRender as any)
-                : undefined,
-              squareStyles: customSquare,
-            }}
-          />
+          <div style={{ width: boardSize, height: boardSize }}>
+            <Chessboard
+              options={{
+                position: fen,
+                boardStyle: { width: boardSize, height: boardSize },
+                arrows: arrow,
+                squareRenderer: currentMove?.playedMove
+                  ? (memoCustomerRender as any)
+                  : undefined,
+                squareStyles: customSquare,
+              }}
+            />
+          </div>
           <div
-            className="text-xs font-semibold height-[38px] mt-1"
+            className="text-xs font-semibold height-[38px] mt-1 text-primary-700"
             style={{ height: 38 }}
           >
             {data.White} ({data.WhiteElo})
@@ -278,12 +321,12 @@ export function GameViewer({ data }: GameViewerProps) {
           </div>
 
           <div className="flex w-full justify-between sm:justify-center mt-3 items-center ">
-            <button onClick={() => moveTo(0)} className="p-3 cursor-pointer">
+            <button onClick={() => moveTo(0)} className="p-3 cursor-pointer text-primary-600 hover:text-primary-700">
               <LuChevronFirst />
             </button>
             <button
               onClick={() => moveTo(currentMoveIndex - 1)}
-              className="p-3 cursor-pointer"
+              className="p-3 cursor-pointer text-primary-600 hover:text-primary-700"
             >
               <GrPrevious />
             </button>
@@ -296,16 +339,16 @@ export function GameViewer({ data }: GameViewerProps) {
             </button>
             <button
               onClick={() => moveTo(currentMoveIndex + 1)}
-              className="p-3 cursor-pointer"
+              className="p-3 cursor-pointer text-primary-600 hover:text-primary-700"
             >
               <GrNext />
             </button>
-            <button onClick={() => moveTo(moveList.length - 1)}>
+            <button onClick={() => moveTo(moveList.length - 1)} className="p-3 cursor-pointer text-primary-600 hover:text-primary-700">
               <LuChevronLast />
             </button>
             <button
               onClick={toggleSpeaker}
-              className="ml-10 p-3 cursor-pointer"
+              className="ml-10 p-3 cursor-pointer text-primary-600 hover:text-primary-700"
             >
               {settings.isMute ? (
                 <PiSpeakerX color="red" />
@@ -313,13 +356,13 @@ export function GameViewer({ data }: GameViewerProps) {
                 <PiSpeakerHigh color="green" />
               )}
             </button>
-            <button onClick={handleDownload} className="p-3 cursor-pointer">
+            <button onClick={handleDownload} className="p-3 cursor-pointer text-primary-600 hover:text-primary-700">
               <LuDownload />
             </button>
 
             <button
               onClick={() => engine?.reviewGame(moveList, depth)}
-              className="p-3 cursor-pointer"
+              className="p-3 cursor-pointer text-primary-600 hover:text-primary-700"
             >
               <MdReviews />
             </button>
@@ -340,7 +383,7 @@ export function GameViewer({ data }: GameViewerProps) {
               />
             </>
           ) : (
-            <div className="p-3 text-3xl text-center font-bold border border-solid mb-4">
+            <div className="p-3 text-3xl text-center font-bold border border-solid border-primary-300 text-primary-700 mb-4">
               {data.Result || data.result}
             </div>
           )}

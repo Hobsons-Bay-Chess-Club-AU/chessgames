@@ -25,7 +25,7 @@ export function ReviewLoading({ data }: ReviewLoadingProps) {
             text={`${percentage.toFixed(1)}%`}
           />
         </div>
-        <div className="text-gray-400 text-center">
+        <div className="text-primary-600 text-center">
           Stockfish 16 NNUE (depth: {data.depth})
         </div>
       </div>

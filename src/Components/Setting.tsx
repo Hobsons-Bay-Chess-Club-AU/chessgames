@@ -10,8 +10,15 @@ export function Setting() {
     setShowSetting(!showSetting);
   };
   return (
-    <div className="pt-2">
-      <GrUserSettings onClick={toggleSetting} />
+    <div>
+      <button
+        onClick={toggleSetting}
+        className="p-2 rounded-lg hover:bg-primary-100 transition-colors cursor-pointer"
+        title="Settings"
+        aria-label="Settings"
+      >
+        <GrUserSettings className="text-xl sm:text-2xl text-primary-700" />
+      </button>
 
       {showSetting && (
         <Modal onClose={() => setShowSetting(false)}>

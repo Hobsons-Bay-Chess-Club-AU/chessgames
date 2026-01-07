@@ -86,19 +86,19 @@ export function ReviewSummary({
   const [waccuracy, baccuracy] = accuracy;
   return (
     <div className="mb-3">
-      <h2 className="text-center py-5 font-bold">Game Review</h2>
+      <h2 className="text-center py-5 font-bold text-primary-700">Game Review</h2>
       <div className="flex justify-between mb-5">
-        <div className="flex flex-col border border-solid border-gray-400 py-3 px-8 items-center">
-          <div className="text-3xl font-bold">{waccuracy.toFixed(1)}</div>
+        <div className="flex flex-col border border-solid border-primary-300 py-3 px-8 items-center">
+          <div className="text-3xl font-bold text-primary-700">{waccuracy.toFixed(1)}</div>
 
-          <span className="text-gray-500">Accuracy</span>
+          <span className="text-primary-600">Accuracy</span>
         </div>
-        <div className="flex justify-center align-middle items-center font-semibold">
+        <div className="flex justify-center align-middle items-center font-semibold text-primary-700">
           {result}
         </div>
-        <div className="flex flex-col border border-solid border-gray-400 py-3 px-8 items-center">
-          <div className="text-3xl font-bold">{baccuracy.toFixed(1)}</div>
-          <span className="text-gray-500">Accuracy</span>
+        <div className="flex flex-col border border-solid border-primary-300 py-3 px-8 items-center">
+          <div className="text-3xl font-bold text-primary-700">{baccuracy.toFixed(1)}</div>
+          <span className="text-primary-600">Accuracy</span>
         </div>
       </div>
 

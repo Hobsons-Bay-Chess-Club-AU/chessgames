@@ -43,7 +43,7 @@ function DisplayReviewedMoveOutput({
   }
 
   return (
-    <div className="p-3 bg-gray-100 mb-5 rounded-lg">
+    <div className="p-3 bg-primary-50 mb-5 rounded-lg border border-primary-200">
       <div className="flex justify-between mb-2">
         <h2
           style={{
@@ -58,11 +58,11 @@ function DisplayReviewedMoveOutput({
           <span className="mx-1 font-semibold">{bestLine.moves[0].san}</span>
           <span className="font-semibold">is a {cl} move</span>
         </h2>
-        <div className="mr-5  py-1 px-4 font-bold bg-slate-300 text-black text-center rounded-sm">
+        <div className="mr-5  py-1 px-4 font-bold bg-primary-200 text-primary-900 text-center rounded-sm">
           {eloText}
         </div>
       </div>
-      <p className="py-2">{bestLine.description}</p>
+      <p className="py-2 text-primary-700">{bestLine.description}</p>
       <div className="mb-3">
         {bestLine.moves.map((m, i) => (
           <Popover
@@ -87,7 +87,7 @@ function DisplayReviewedMoveOutput({
             trigger={PopoverTriggerType.hover}
             key={m.san + m.lan + m.to + i}
           >
-            <span className="pointer font-semibold text-gray-500 pr-1 z-50 cursor-pointer hover:underline">
+            <span className="pointer font-semibold text-primary-600 pr-1 z-50 cursor-pointer hover:underline hover:text-primary-700">
               {' '}
               {m.color === 'w' ? `${index++}.` : ''}
               {m.color === 'b' && i === 0 ? `${index++}...` : ' '}
@@ -98,7 +98,7 @@ function DisplayReviewedMoveOutput({
       </div>
       <div className="text-center w-full m-3">
         <button
-          className="rounded-sm text-sm bg-green-400 p-2 font-semibold hover:bg-blue-700 hover:text-white"
+          className="rounded-sm text-sm bg-primary-400 p-2 font-semibold text-primary-900 hover:bg-primary-700 hover:text-white transition-colors"
           onClick={() => onShowMove(move)}
         >
           <BiSolidChess className="inline" />
@@ -116,7 +116,7 @@ export function LineReview({ move, onShowMove }: LineReviewProps) {
 
   const showPlayedMove = move.playedMove.bestmove !== move.best.bestmove;
   return (
-    <div className="p-3 border">
+    <div className="p-3 border border-primary-200">
       {showPlayedMove && (
         <div>
           <DisplayReviewedMoveOutput

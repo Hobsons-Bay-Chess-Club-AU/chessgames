@@ -8,6 +8,16 @@ body {
   background-color: white;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
     Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  color: #0d4451; /* primary-600 for body text */
+}
+
+/* Global text color updates */
+h1, h2, h3, h4, h5, h6 {
+  color: #0a343f; /* primary-700 for headings */
+}
+
+p, span, div {
+  color: inherit;
 }
 
 em {
@@ -20,13 +30,40 @@ em {
   background-size: contain;
 }
 
+/* Search Box Custom Styling */
+.ais-SearchBox-form {
+  position: relative;
+}
+
+.ais-SearchBox-input {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.ais-SearchBox-input:focus {
+  box-shadow: 0 0 0 3px rgba(16, 84, 99, 0.1);
+}
+
+.ais-SearchBox-submit,
+.ais-SearchBox-reset {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ais-SearchBox-submit svg,
+.ais-SearchBox-reset svg {
+  width: 18px;
+  height: 18px;
+}
+
 
 .ais-ClearRefinements{
   padding: 5px
 }
 
 .ais-Hits-item:hover {
-  background-color: #80adc2;
+  background-color: #4d93a4;
   cursor: pointer;
 }
 .hits_card .ais-Hits-item{
@@ -122,4 +159,93 @@ em {
     width: 33.33%;
     float: left;
   }
+}
+
+.ais-SearchBox-submitIcon {
+  display: none;  
+}
+
+/* Modern Search Box Styling */
+.ais-SearchBox-input {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.ais-SearchBox-input:focus {
+  box-shadow: 0 20px 25px -5px rgba(16, 84, 99, 0.1), 0 10px 10px -5px rgba(16, 84, 99, 0.04);
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+/* Smooth backdrop blur support */
+@supports (backdrop-filter: blur(12px)) {
+  .ais-SearchBox-input {
+    background-color: rgba(255, 255, 255, 0.85);
+  }
+  
+  .ais-SearchBox-input:focus {
+    background-color: rgba(255, 255, 255, 0.95);
+  }
+}
+
+/* Header scroll effects */
+header {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+header.scrolled {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Chessboard Square Colors - Using Primary Theme */
+/* Comprehensive targeting of react-chessboard squares */
+
+/* Dark squares - use primary color #105463 */
+.react-chessboard [style*="rgb(118, 150, 86)"],
+.react-chessboard [style*="rgb(181, 136, 99)"],
+.react-chessboard [style*="#769656"],
+.react-chessboard [style*="#b58863"],
+.react-chessboard [style*="769656"],
+.react-chessboard [style*="b58863"] {
+  background-color: #105463 !important;
+}
+
+/* Light squares - warm cream #F5E6D3 that complements primary teal */
+.react-chessboard [style*="rgb(238, 238, 210)"],
+.react-chessboard [style*="rgb(240, 217, 181)"],
+.react-chessboard [style*="#eeeed2"],
+.react-chessboard [style*="#f0d9b5"],
+.react-chessboard [style*="eeeed2"],
+.react-chessboard [style*="f0d9b5"] {
+  background-color: #F5E6D3 !important;
+}
+
+/* Alternative: Direct style attribute override for any dark square color */
+.react-chessboard [style*="background"]:has([style*="rgb(118"]),
+.react-chessboard [style*="background"]:has([style*="rgb(181"]),
+.react-chessboard [style*="background"]:has([style*="769656"]),
+.react-chessboard [style*="background"]:has([style*="b58863"]) {
+  background-color: #105463 !important;
+}
+
+/* CSS custom properties for future use */
+.react-chessboard {
+  --chess-dark: #105463;
+  --chess-light: #F5E6D3;
+}
+
+/* Ensure proper contrast and visual appeal for pieces */
+.react-chessboard svg {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+}
+
+/* Add subtle definition between squares */
+.react-chessboard > div > div > div {
+  border: 1px solid rgba(16, 84, 99, 0.08);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Hover effect for interactive squares */
+.react-chessboard > div > div > div:hover {
+  border-color: rgba(16, 84, 99, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(16, 84, 99, 0.1);
 }

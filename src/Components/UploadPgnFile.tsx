@@ -51,11 +51,15 @@ function PgnUploadComponent() {
   return (
     <div>
       <button
-        className="bg-green-500 rounded-sm p-1"
+        className="rounded-lg p-2 transition-colors flex items-center space-x-1.5 shadow-sm hover:shadow-md"
+        style={{ backgroundColor: '#105463', color: 'white' }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0d4451'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#105463'}
         onClick={() => setIsOpen(true)}
+        title="Upload game"
       >
-        <BiCloudUpload className="inline mr-4" />
-        Upload game
+        <BiCloudUpload className="text-lg sm:text-xl" style={{ color: 'white' }} />
+        <span className="hidden sm:inline text-sm font-medium" style={{ color: 'white' }}>Upload</span>
       </button>
       {isOpen && (
         <Modal
@@ -63,32 +67,32 @@ function PgnUploadComponent() {
             setIsOpen(false);
           }}
         >
-          <div className="container mx-auto p-4">
+          <div className="w-full">
             <InfoAlert
               title="Alternative"
               message="You can upload single/multiple games by email them to : hbcc.it+games@outlook.com"
             />
-            <h2 className="text-2xl mb-4 mt-4">Upload your game (*.pgn):</h2>
+            <h2 className="text-2xl mb-4 mt-4 text-primary-700">Upload your game (*.pgn):</h2>
 
             <div className="mb-4">
               <input
                 type="file"
                 title="Select pgn file"
                 onChange={handleFileChange}
-                className="border p-2"
+                className="border border-primary-300 rounded-lg p-2 text-primary-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all"
               />
             </div>
 
             {fileContent && (
               <div className="mt-4">
-                <h2 className="text-lg mb-2">PGN:</h2>
-                <pre className="bg-gray-200 p-4 whitespace-pre-wrap max-h-[400px] overflow-y-auto">
+                <h2 className="text-lg mb-2 text-primary-700">PGN:</h2>
+                <pre className="bg-primary-50 border border-primary-200 rounded-lg p-4 whitespace-pre-wrap max-h-[400px] overflow-y-auto text-primary-800 text-sm">
                   {fileContent}
                 </pre>
               </div>
             )}
             {isSuccess && (
-              <div className="bg-green-100 border border-green-400 text-white-700 px-4 py-2 rounded relative mt-5">
+              <div className="bg-primary-100 border border-primary-400 text-primary-900 px-4 py-2 rounded relative mt-5">
                 Thanks you for contribue your game. This game will be processed
                 quickly and available on the the website.
               </div>
@@ -96,10 +100,24 @@ function PgnUploadComponent() {
             <button
               disabled={!fileContent}
               onClick={handleUpload}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-5 text-center"
+              className="font-bold py-2 px-4 rounded mt-5 text-center transition-colors disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: !fileContent ? '#b3d1d8' : '#105463',
+                color: !fileContent ? '#0a343f' : 'white'
+              }}
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.backgroundColor = '#0a343f';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.backgroundColor = '#105463';
+                }
+              }}
             >
-              <TbWorldUpload className="inline mr-2" />
-              Upload
+              <TbWorldUpload className="inline mr-2" style={{ color: !fileContent ? '#0a343f' : 'white' }} />
+              <span style={{ color: !fileContent ? '#0a343f' : 'white' }}>Upload</span>
             </button>
           </div>
         </Modal>

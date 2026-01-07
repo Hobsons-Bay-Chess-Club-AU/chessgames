@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AiOutlineClose } from 'react-icons/ai';
 interface ModalProps {
   onClose: () => void;
@@ -16,11 +17,12 @@ export function Modal({ children, onClose }: ModalProps) {
   const handleClose = () => {
     onClose();
   };
-  return (
-    <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="relative p-7 rounded-lg shadow-lg bg-white">
+  
+  const modalContent = (
+    <div className="fixed top-0 left-0 w-full h-full bg-black/50 backdrop-blur-sm flex justify-center items-center z-[9999] p-4 overflow-y-auto">
+      <div className="relative p-7 rounded-lg shadow-lg bg-white max-w-2xl w-full max-h-[90vh] overflow-y-auto z-[10000]">
         <a
-          className="close-button fixed sm:absolute top-5 right-5 sm:top-3 sm:right-3 text-lg cursor-pointer hover:text-red-500"
+          className="close-button absolute top-3 right-3 text-lg cursor-pointer hover:text-primary-600 text-primary-500 z-10"
           onClick={handleClose}
         >
           <AiOutlineClose />
@@ -30,4 +32,6 @@ export function Modal({ children, onClose }: ModalProps) {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

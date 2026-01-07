@@ -12,6 +12,8 @@ import {
   PoweredBy,
 } from 'react-instantsearch';
 import { useParams, useNavigate } from 'react-router-dom';
+import { HiMagnifyingGlass } from 'react-icons/hi2';
+import { AiOutlineClose } from 'react-icons/ai';
 import './App.css';
 import { DisplaySelector } from './Components/DisplaySelector';
 import { Panel } from './Components/Panel';
@@ -88,6 +90,8 @@ export default function App() {
 
   const [game, setGame] = useState<any>();
   const [displayMode, setDisplayMode] = useState<string>('card');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const handleHitClick = (item: any) => {
     navigate('/game/' + item.objectID);
@@ -121,6 +125,33 @@ export default function App() {
     };
     fetchGameById();
   }, [algoliaClient, game, gameId, indexName, isAlgolia, setGame]);
+
+  // Handle keyboard shortcut for search (Ctrl/Cmd + K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+      if (e.key === 'Escape' && isSearchOpen) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSearchOpen]);
+
+  // Handle scroll detection for header styling
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <InstantSearch
       searchClient={searchClient}
@@ -128,16 +159,140 @@ export default function App() {
       insights={false}
     >
       <Configure hitsPerPage={50} />
-      <header className="h-[100px] sm:h-auto min-height-[90px] pt-[0px] header-bg flex justify-center items-center sm:min-height-[170px] p-2 bg-opacity-50 bg-white bg-contain sm:pt-[150px] relative">
-        <SearchBox
-          placeholder="Search keywork (ie: Kiet vs Elias)"
-          className="w-3/4 mb-8"
-        />
-        <div className="absolute top-5 right-5 p-2 flex w-[180px] justify-between">
-          <PgnUploadComponent />
-          <Setting />
+      <header
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? 'bg-white/95 backdrop-blur-md shadow-lg'
+            : 'bg-gradient-to-r from-primary-50 to-primary-100 shadow-md'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Mobile Layout */}
+          <div className="flex items-center justify-between py-3 md:hidden">
+            {/* Logo */}
+            <button
+              onClick={() => {
+                navigate('/');
+                setGame(undefined);
+              }}
+              className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+            >
+              <img
+                src="/chess_logo.png"
+                alt="Chess Games Logo"
+                className="h-8 w-8 object-contain"
+              />
+            </button>
+            
+            {/* Navigation Icons */}
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="p-2 rounded-lg hover:bg-primary-100 transition-colors cursor-pointer text-primary-600 hover:text-primary-700"
+                title="Search (Ctrl+K)"
+                aria-label="Search"
+              >
+                <HiMagnifyingGlass className="text-xl sm:text-2xl" />
+              </button>
+              <PgnUploadComponent />
+              <Setting />
+            </div>
+          </div>
+
+          {/* Desktop Layout */}
+          <div className="hidden md:flex md:items-center md:justify-between md:py-4 md:gap-6">
+            {/* Logo Section */}
+            <button
+              onClick={() => {
+                navigate('/');
+                setGame(undefined);
+              }}
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity flex-shrink-0"
+            >
+              <img
+                src="/chess_logo.png"
+                alt="Hobsons Bay Chess Club Logo"
+                className="h-10 w-10 object-contain"
+              />
+              <span
+                className={`text-xl font-bold hidden lg:block transition-colors ${
+                  isScrolled ? 'text-primary-700' : 'text-primary-800'
+                }`}
+              >
+                Hobsons Bay Chess Club
+              </span>
+            </button>
+
+            {/* Navigation Section */}
+            <div className="flex items-center space-x-4 flex-shrink-0">
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="p-2 rounded-lg hover:bg-primary-100 transition-colors cursor-pointer text-primary-600 hover:text-primary-700"
+                title="Search (Ctrl+K)"
+                aria-label="Search"
+              >
+                <HiMagnifyingGlass className="text-xl" />
+              </button>
+              <PgnUploadComponent />
+              <Setting />
+            </div>
+          </div>
+
         </div>
       </header>
+
+      {/* Modern Floating Search Box - Always render SearchBox to maintain state */}
+      <div
+        className={`fixed inset-0 z-50 flex items-start justify-center pt-20 sm:pt-24 px-4 transition-all duration-500 ease-out ${
+          isSearchOpen ? 'opacity-100 pointer-events-auto visible backdrop-blur-sm bg-black/20' : 'opacity-0 pointer-events-none invisible'
+        }`}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setIsSearchOpen(false);
+          }
+        }}
+      >
+        <div
+          className={`w-full max-w-4xl transition-all duration-500 ease-out relative ${
+            isSearchOpen ? 'translate-y-0 scale-100 opacity-100' : '-translate-y-8 scale-90 opacity-0'
+          }`}
+        >
+          {/* Close button - always visible for mobile */}
+          <button
+            onClick={() => setIsSearchOpen(false)}
+            className="absolute -top-12 right-0 sm:right-4 p-3 rounded-full bg-white/90 backdrop-blur-xl shadow-lg hover:bg-white transition-all duration-200 text-primary-600 hover:text-primary-700 active:scale-95 touch-manipulation"
+            aria-label="Close search"
+          >
+            <AiOutlineClose className="w-6 h-6 sm:w-7 sm:h-7" />
+          </button>
+          
+          <SearchBox
+            placeholder="Search games (e.g., Kiet vs Tony)"
+            classNames={{
+              root: 'w-full',
+              form: 'relative',
+              input: 'w-full px-6 py-5 sm:px-8 sm:py-7 pl-16 sm:pl-20 pr-16 sm:pr-20 rounded-3xl bg-white/95 backdrop-blur-xl border-0 shadow-2xl focus:shadow-3xl outline-none transition-all duration-300 text-xl sm:text-2xl font-medium text-primary-800 placeholder:text-primary-400',
+              submit: 'absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-primary-500 hover:text-primary-700 transition-colors z-10',
+              reset: 'absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 text-primary-400 hover:text-primary-600 transition-colors z-10',
+              loadingIndicator: 'absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 z-10',
+            }}
+            submitIconComponent={() => (
+              <HiMagnifyingGlass className="w-6 h-6 sm:w-7 sm:h-7" />
+            )}
+            resetIconComponent={() => (
+              <AiOutlineClose className="w-5 h-5 sm:w-6 sm:h-6" />
+            )}
+          />
+          <div className={`mt-4 sm:mt-6 text-center transition-all duration-500 delay-100 ${
+            isSearchOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+          }`}>
+            <p className="text-xs sm:text-sm text-primary-500">
+              <span className="hidden sm:inline">Press <kbd className="px-3 py-1.5 mx-1 bg-primary-100/50 backdrop-blur-sm rounded text-primary-700 text-sm font-medium">Esc</kbd> to close</span>
+              <span className="sm:hidden">Tap outside or close button to dismiss</span>
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="flex w-full p-4 flex-col sm:flex-row">
         <div className="w-full sm:w-3/12 pr-2 lg:w-2/12">

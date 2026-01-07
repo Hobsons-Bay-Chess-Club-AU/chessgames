@@ -18,6 +18,7 @@ export function MiniBoard({
   return (
     <Chessboard
       options={{
+        showNotation: false,
         position,
         boardStyle: { width: size },
         arrows: mappedArrows,

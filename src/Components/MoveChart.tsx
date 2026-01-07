@@ -25,7 +25,7 @@ export function MoveChart({ reviewData }: MoveChartProps) {
     if (active && payload && payload.length) {
       return (
         <div
-          className="bg-gray-200 text-white-500 px-4 py-2 font-semibold flex rounded-md"
+          className="px-4 py-2 font-semibold flex rounded-md text-white"
           style={{ backgroundColor: payload[0].payload.color }}
         >
           <span className="mx-3">{`${payload[0].payload.move}`}</span>
