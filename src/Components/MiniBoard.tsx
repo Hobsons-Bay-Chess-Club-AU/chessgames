@@ -1,5 +1,4 @@
-import { Square } from 'chess.js';
-import { Chessboard } from 'react-chessboard';
+import { Arrow, Chessboard } from 'react-chessboard';
 interface MiniBoardProps {
   position: string;
   size?: number;
@@ -10,13 +9,20 @@ export function MiniBoard({
   size = 100,
   arrows = [],
 }: MiniBoardProps) {
+  const mappedArrows: Arrow[] = (arrows || []).map((a) => ({
+    startSquare: a?.[0] || '',
+    endSquare: a?.[1] || '',
+    color: '#11d954',
+  }));
+
   return (
     <Chessboard
-      customArrowColor="#11d954"
-      boardWidth={size}
-      position={position}
-      customArrows={arrows as Square[][]}
-      arePiecesDraggable={false}
+      options={{
+        position,
+        boardStyle: { width: size },
+        arrows: mappedArrows,
+        allowDragging: false,
+      }}
     />
   );
 }

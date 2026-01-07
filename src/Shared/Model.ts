@@ -1,5 +1,23 @@
-import type { Move } from 'chess.js';
 import { MoveClassification } from './Constants';
+
+export type MoveColor = 'w' | 'b';
+
+// We intentionally avoid extending `chess.js`'s exported `Move` type.
+// That upstream type has changed across versions and can introduce breaking
+// required fields that our persisted/derived move objects don't include.
+export interface ChessMove {
+  color: MoveColor;
+  from: string;
+  to: string;
+  piece: string;
+  san: string;
+  lan: string;
+  before: string;
+  after: string;
+  captured?: string;
+  promotion?: string;
+  flags?: string;
+}
 
 export interface GameData {
   Game: string;
@@ -28,7 +46,7 @@ export interface ReviewedLine extends StockfishLine {
   marterial: number;
   moves: EnrichedMove[];
 }
-export interface EnrichedMove extends Move {
+export interface EnrichedMove extends ChessMove {
   captured_pieces: PieceCaptureAccumulate;
   index: number;
 }

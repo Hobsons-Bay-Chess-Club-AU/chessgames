@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import {
+  EnrichedMove,
   PieceCaptureAccumulate,
   ReviewedLine,
   ReviewedMove,
@@ -46,14 +47,21 @@ export function simulateGame(moves: string[], startFen?: string) {
     r: 6,
     q: 9,
   };
-  const lines = simulateGame.history({ verbose: true }).map((move) => {
+  const lines: EnrichedMove[] = simulateGame
+    .history({ verbose: true })
+    .map((move: any, index: number) => {
     if (move.captured) {
       if (move.color === 'w') {
         captured.wPoint += points[move.captured];
       } else captured.bPoint += points[move.captured];
-      captured[move.color].push(move.captured as string);
+      const moveColor = move.color as 'w' | 'b';
+      captured[moveColor].push(move.captured as string);
     }
-    return { ...move, captured_pieces: JSON.parse(JSON.stringify(captured)) };
+    return {
+      ...move,
+      index,
+      captured_pieces: JSON.parse(JSON.stringify(captured)),
+    } as EnrichedMove;
   });
   return lines;
 }

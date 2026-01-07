@@ -38,7 +38,7 @@ export function parsePGN(pgn: string) {
           if (move) {
             game.move(move.replace('#', ''));
           }
-        } catch (err) {
+        } catch {
           console.log('Error parsing game', pgn);
           console.log(moves);
           // throw err;
@@ -52,7 +52,7 @@ export function parsePGN(pgn: string) {
       gameData.Year = gameData.Date.split('.')[0];
     }
     return gameData;
-  } catch (err) {
+  } catch {
     return {
       error: true,
     };

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
-import { Chessboard } from 'react-chessboard';
+import { Arrow, Chessboard } from 'react-chessboard';
 import { Square } from 'chess.js';
 import { LuChevronFirst, LuDownload, LuChevronLast } from 'react-icons/lu';
 import { BsPlayFill, BsStopFill } from 'react-icons/bs';
@@ -33,7 +33,7 @@ export function GameViewer({ data }: GameViewerProps) {
   const { settings, setSetting } = useSetting({ isMute: true });
   const [{ depth }] = useStockfishOptions();
   const [currentMove, setCurrentMove] = useState<ReviewedMove>();
-  const [arrow, setArrow] = useState<Square[][]>([]);
+  const [arrow, setArrow] = useState<Arrow[]>([]);
   const [moveList, setMoveList] = useState<ReviewedMove[]>([]);
   const { engine, bestMoveResult, reviewData, reviewStatus } = useStockfish();
   const { height, width } = useViewport();
@@ -92,10 +92,11 @@ export function GameViewer({ data }: GameViewerProps) {
       if (item.best) {
         const bestmove: string = item.best?.bestmove || '';
         setArrow([
-          [
-            bestmove.substring(0, 2) as Square,
-            bestmove.substring(2, 4) as Square,
-          ],
+          {
+            startSquare: bestmove.substring(0, 2),
+            endSquare: bestmove.substring(2, 4),
+            color: '#11d954',
+          },
         ]);
       }
       setFen(item.after);
@@ -169,7 +170,13 @@ export function GameViewer({ data }: GameViewerProps) {
           playSound(m);
         }
         console.log(m);
-        setArrow([[m.from, m.to]]);
+        setArrow([
+          {
+            startSquare: m.from,
+            endSquare: m.to,
+            color: '#11d954',
+          },
+        ]);
         engine?.findBestMove(m.after, depth);
         setFen(m.after);
       }, index * 1000);
@@ -245,12 +252,15 @@ export function GameViewer({ data }: GameViewerProps) {
             />
           </div>
           <Chessboard
-            position={fen}
-            boardWidth={boardSize}
-            customArrows={arrow}
-            customArrowColor="#11d954"
-            customSquare={currentMove?.playedMove && memoCustomerRender}
-            customSquareStyles={customSquare}
+            options={{
+              position: fen,
+              boardStyle: { width: boardSize },
+              arrows: arrow,
+              squareRenderer: currentMove?.playedMove
+                ? (memoCustomerRender as any)
+                : undefined,
+              squareStyles: customSquare,
+            }}
           />
           <div
             className="text-xs font-semibold height-[38px] mt-1"

@@ -37,8 +37,8 @@ export function MoveChart({ reviewData }: MoveChartProps) {
     return null;
   };
 
-  const CustomizedDot = (props: { cx: number; cy: number; payload: any }) => {
-    const { cx, cy, payload } = props;
+  const CustomizedDot = (props: { cx?: number; cy?: number; payload?: any }) => {
+    const { cx = 0, cy = 0, payload = {} } = props;
     let color = 'tranparent';
     let r = 0;
     if (payload.showDot) {
@@ -116,7 +116,7 @@ export function MoveChart({ reviewData }: MoveChartProps) {
             dataKey="winChance"
             stroke="transparent"
             fill="#48ed42"
-            dot={CustomizedDot}
+            dot={(props: any) => <CustomizedDot {...props} />}
           />
           {/* <Line type="monotone" dataKey="winChance" stroke="#82ca9d" /> */}
         </ComposedChart>

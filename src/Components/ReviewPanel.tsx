@@ -29,7 +29,12 @@ export function ReviewPanel({
   return (
     <>
       {pairMoves?.map(([white, black], index) => (
-        <div key={index} ref={(ref) => (lineRefs.current[index] = ref)}>
+        <div
+          key={index}
+          ref={(ref) => {
+            lineRefs.current[index] = ref;
+          }}
+        >
           <div
             className="flex w-full items-center border-b border-dashed border-gray-300 mb-1"
             key={index}

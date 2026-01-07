@@ -1,5 +1,4 @@
 import { forwardRef } from 'react';
-import { CustomSquareProps } from 'react-chessboard/dist/chessboard/types';
 import {
   MoveClassification,
   MoveClassificationIcons,
@@ -7,7 +6,7 @@ import {
 import { ReviewedMove } from '../Shared/Model';
 
 export const CustomSquareRenderer = (currentMove?: ReviewedMove) =>
-  forwardRef<HTMLDivElement, CustomSquareProps>((props, ref) => {
+  forwardRef<HTMLDivElement, any>((props, ref) => {
     const { children, square, style } = props;
     const icon =
       MoveClassificationIcons[

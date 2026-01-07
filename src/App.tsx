@@ -20,7 +20,7 @@ import { Modal } from './Components/Modal';
 import { GameViewer } from './Components/GameViewer';
 import { HitCard } from './Components/HitCard';
 import { TableHit } from './Components/TableHit';
-import algoliasearch from 'algoliasearch';
+import { algoliasearch } from 'algoliasearch';
 import { OpenPgn } from './Components/OpenPgn';
 import { Setting } from './Components/Setting';
 import PgnUploadComponent from './Components/UploadPgnFile';
@@ -37,7 +37,7 @@ export default function App() {
   const { gameId } = useParams();
 
   const navigate = useNavigate();
-  const { searchClient, isAlgolia, indexName } = useMemo(() => {
+  const { searchClient, isAlgolia, indexName, algoliaClient } = useMemo(() => {
     const typesenseInstantsearchAdapter = new TypesenseInstantSearchAdapter({
       server: {
         apiKey: import.meta.env.VITE_TYPESENSE_API || 'xyz', // Be sure to use an API key that only allows search operations
@@ -78,6 +78,7 @@ export default function App() {
     return {
       searchClient,
       isAlgolia: algoliaSearchClient !== undefined,
+      algoliaClient: algoliaSearchClient,
       indexName:
         algolia_games[rndIdx] ||
         import.meta.env.VITE_INDEX_NAME ||
@@ -106,14 +107,20 @@ export default function App() {
       return;
     }
     const fetchGameById = async () => {
-      const index = searchClient.initIndex(import.meta.env.VITE_ALGOLIA_INDEX);
-      const gamedata = await index.getObject(gameId);
+      if (!isAlgolia || !algoliaClient) {
+        return;
+      }
+
+      const gamedata = await algoliaClient.getObject({
+        indexName,
+        objectID: gameId,
+      });
       if (gamedata) {
         setGame(gamedata);
       }
     };
     fetchGameById();
-  }, [game, gameId, searchClient, setGame]);
+  }, [algoliaClient, game, gameId, indexName, isAlgolia, setGame]);
   return (
     <InstantSearch
       searchClient={searchClient}
@@ -219,7 +226,7 @@ export default function App() {
           </div>
           {displayMode === 'card' && (
             <Hits
-              className="w-full hits_card"
+              classNames={{ root: 'w-full hits_card' }}
               hitComponent={(props) => (
                 <HitCard {...props} onHitClick={handleHitClick} />
               )}
@@ -235,7 +242,7 @@ export default function App() {
 
           {displayMode === 'table' && (
             <Hits
-              className="ais-Hits-table"
+              classNames={{ root: 'ais-Hits-table' }}
               hitComponent={(props) => (
                 <TableHit {...props} onHitClick={handleHitClick} />
               )}

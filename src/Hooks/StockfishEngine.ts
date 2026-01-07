@@ -1,4 +1,3 @@
-import { Move } from 'chess.js';
 import {
   calculateAccuracy,
   calculateWinChange,
@@ -7,7 +6,7 @@ import {
 import asyncPool from 'tiny-async-pool';
 import _ from 'lodash';
 import { MoveClassification } from '../Shared/Constants';
-import { BestMoveOutput, ReviewedMove } from '../Shared/Model';
+import { BestMoveOutput, EnrichedMove, ReviewedMove } from '../Shared/Model';
 import { advanceCompareReview, reviewMoveLine } from '../Shared/Game';
 import { sortStockfishLine } from '../Shared/Utils';
 
@@ -337,7 +336,7 @@ export class StockfishEngine {
     return { ...move };
   }
 
-  async reviewGame(moves: Move[], depth = 18) {
+  async reviewGame(moves: EnrichedMove[], depth = 18) {
     const moveWithIndex = moves.map((x, index) => ({ ...x, index }));
     this.sendUci('stop');
     // this.setOption('UCI_AnalyseMode', 'true');
@@ -385,10 +384,9 @@ export class StockfishEngine {
     //   };
     // };
 
-    const findBestMoveInForkedEngine = async (move: Move) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const findBestMoveInForkedEngine = async (move: EnrichedMove) => {
       const executeEngine =
-        this.enginePool.shift() || new StockfishEngine((_type, _data) => {});
+        this.enginePool.shift() || new StockfishEngine(() => {});
       // self.setOption('UCI_AnalyseMode', 'true');
       const best = await executeEngine.findBestMove(move.before, depth);
 

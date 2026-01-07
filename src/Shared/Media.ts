@@ -1,6 +1,6 @@
-import type { Move } from 'chess.js';
+import type { ChessMove } from './Model';
 
-export const playSound = (move: Move) => {
+export const playSound = (move: ChessMove) => {
   let audioType = move.color === 'w' ? 'move-self' : 'move-opponent';
   if (move.san.includes('x')) {
     audioType = 'capture';
