@@ -51,8 +51,8 @@ export function EloBar({ bestMoveResult, height }: EloBarProps) {
         style={{ height: blackElo + '%' }}
       ></div>
       <div
-        className="w-full h-[50%] bg-green-500 transition-height duration-300 ease-linear"
-        style={{ height: whiteElo + '%' }}
+        className="w-full h-[50%] transition-height duration-300 ease-linear"
+        style={{ height: whiteElo + '%', backgroundColor: '#105463' }}
       ></div>
     </div>
   );

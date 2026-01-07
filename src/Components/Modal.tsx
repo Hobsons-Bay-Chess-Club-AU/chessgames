@@ -20,7 +20,7 @@ export function Modal({ children, onClose }: ModalProps) {
   
   const modalContent = (
     <div className="fixed top-0 left-0 w-full h-full bg-black/50 backdrop-blur-sm flex justify-center items-center z-[9999] p-4 overflow-y-auto">
-      <div className="relative p-7 rounded-lg shadow-lg bg-white max-w-2xl w-full max-h-[90vh] overflow-y-auto z-[10000]">
+      <div className="relative p-4 sm:p-7 rounded-lg shadow-lg bg-white max-w-7xl w-full max-h-[95vh] overflow-y-auto z-[10000]">
         <a
           className="close-button absolute top-3 right-3 text-lg cursor-pointer hover:text-primary-600 text-primary-500 z-10"
           onClick={handleClose}
